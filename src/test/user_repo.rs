@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{container::Container, injectable::Injectable, test::user::User};
 
 pub trait UserRepo {
@@ -14,13 +16,20 @@ impl UserRepo for UserMockRepo {
     }
 }
 
-impl Injectable for UserMockRepo {
-    type Target = dyn UserRepo;
-    
+impl Injectable<dyn UserRepo> for UserMockRepo {
     fn __syringe_construct(
         _container: &Container
-    ) -> Box<Self::Target> {
+    ) -> Arc<dyn UserRepo> {
         let user_mock_repo: UserMockRepo = Self {};
-        Box::new(user_mock_repo)
+        Arc::new(user_mock_repo)
+    }
+}
+
+impl Injectable<UserMockRepo> for UserMockRepo {
+    fn __syringe_construct(
+        _container: &Container
+    ) -> Arc<UserMockRepo> {
+        let user_mock_repo: UserMockRepo = Self {};
+        Arc::new(user_mock_repo)
     }
 }

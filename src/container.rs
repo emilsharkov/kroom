@@ -1,40 +1,49 @@
 use std::collections::HashMap;
-use std::any::{Any, TypeId};
+use std::any::{Any, TypeId, type_name};
+use std::sync::Arc;
 use crate::injectable::Injectable;
 
 type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
-     trait_to_constructor: HashMap<TypeId,Constructor>
+    interface_constructor_registry: HashMap<TypeId, Constructor>,
 }
 
 impl Container {
     pub fn new() -> Self {
         Self {
-            trait_to_constructor: HashMap::new()
+            interface_constructor_registry: HashMap::new(),
         }
     }
 
-    pub fn get<T: ?Sized + 'static>(&self) -> Box<T> {
-            let id = TypeId::of::<T>();
-            let constructor = self
-                .trait_to_constructor
-                .get(&id)
-                .expect("Not implemented");
-    
-            let boxed_any = constructor(self);
-            let boxed_t = boxed_any
-                .downcast::<Box<T>>()
-                .expect("Type mismatch during downcast");
-            *boxed_t
+    pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
+        let interface_id: TypeId = TypeId::of::<Interface>();
+        let interface_constructor: &Constructor = self
+            .interface_constructor_registry
+            .get(&interface_id)
+            .unwrap_or_else(||{
+                let interace_name: &str = type_name::<Interface>();
+                panic!("Interface {:?} with TypeId {:?} not registered to Container",interace_name,interface_id)
+            });
+
+        let any_box: Box<dyn Any> = interface_constructor(self);
+        let boxed_arc: Box<Arc<Interface>> = any_box
+            .downcast::<Arc<Interface>>()
+            .expect("Type mismatch during downcast");
+        let arc_trait: Arc<Interface> = *boxed_arc;
+        arc_trait
     }
 
-    pub fn register<V: Injectable + 'static>(&mut self) {
-        let id = TypeId::of::<V::Target>();
+    pub fn register<Interface,Implementation>(&mut self)
+    where 
+        Interface: ?Sized + 'static,
+        Implementation: Injectable<Interface> + 'static,
+    {
+        let interface_type: TypeId = TypeId::of::<Interface>();
         let erased_constructor: Constructor = |container: &Container| -> Box<dyn Any> {
-            let boxed_target: Box<V::Target> = V::__syringe_construct(container);
-            Box::new(boxed_target) // Box<Box<V::Target>>, coerced to Box<dyn Any>
+            let target: Arc<Interface> = Implementation::__syringe_construct(container);
+            Box::new(target)
         };
-        self.trait_to_constructor.insert(id, erased_constructor);
+        self.interface_constructor_registry.insert(interface_type, erased_constructor);
     }
 }
