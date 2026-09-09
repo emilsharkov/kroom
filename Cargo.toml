@@ -1,7 +1,6 @@
-[package]
-name = "syringe"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-inventory = "0.3.24"
+[workspace]
+resolver = "3"
+members = [
+    "syringe-core",
+    "syringe-macros",
+]
