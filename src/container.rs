@@ -110,6 +110,138 @@ impl Container {
             })
             .collect::<Vec<Arc<Interface>>>();
         
-        return all_instances;
+        all_instances
+    }
+}
+
+impl Default for Container {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    trait Greeter: Send + Sync {
+        fn greet(&self) -> String;
+    }
+
+    struct EnglishGreeter;
+    impl Greeter for EnglishGreeter {
+        fn greet(&self) -> String {
+            "Hello".to_string()
+        }
+    }
+
+    impl Injectable<EnglishGreeter> for EnglishGreeter {
+        fn __syringe_construct(_container: &Container) -> Arc<EnglishGreeter> {
+            Arc::new(EnglishGreeter)
+        }
+    }
+
+    impl Injectable<dyn Greeter> for EnglishGreeter {
+        fn __syringe_construct(_container: &Container) -> Arc<dyn Greeter> {
+            Arc::new(EnglishGreeter)
+        }
+    }
+
+    struct SpanishGreeter;
+    impl Greeter for SpanishGreeter {
+        fn greet(&self) -> String {
+            "Hola".to_string()
+        }
+    }
+
+    impl Injectable<dyn Greeter> for SpanishGreeter {
+        fn __syringe_construct(_container: &Container) -> Arc<dyn Greeter> {
+            Arc::new(SpanishGreeter)
+        }
+    }
+
+    struct GreeterService {
+        greeter: Arc<dyn Greeter>,
+    }
+
+    impl Injectable<GreeterService> for GreeterService {
+        fn __syringe_construct(container: &Container) -> Arc<GreeterService> {
+            let greeter = container.get::<dyn Greeter>();
+            Arc::new(GreeterService { greeter })
+        }
+    }
+
+    #[test]
+    fn test_register_and_get_concrete() {
+        let mut container = Container::new();
+        container.register::<EnglishGreeter, EnglishGreeter>();
+
+        let greeter = container.get::<EnglishGreeter>();
+        assert_eq!(greeter.greet(), "Hello");
+    }
+
+    #[test]
+    fn test_register_and_get_interface() {
+        let mut container = Container::new();
+        container.register::<dyn Greeter, EnglishGreeter>();
+
+        let greeter = container.get::<dyn Greeter>();
+        assert_eq!(greeter.greet(), "Hello");
+    }
+
+    #[test]
+    fn test_get_all_multiple_registrations() {
+        let mut container = Container::new();
+        container.register::<dyn Greeter, EnglishGreeter>();
+        container.register::<dyn Greeter, SpanishGreeter>();
+
+        let greeters = container.get_all::<dyn Greeter>();
+        assert_eq!(greeters.len(), 2);
+        assert_eq!(greeters[0].greet(), "Hello");
+        assert_eq!(greeters[1].greet(), "Hola");
+    }
+
+    #[test]
+    fn test_get_all_single_registration() {
+        let mut container = Container::new();
+        container.register::<dyn Greeter, SpanishGreeter>();
+
+        let greeters = container.get_all::<dyn Greeter>();
+        assert_eq!(greeters.len(), 1);
+        assert_eq!(greeters[0].greet(), "Hola");
+    }
+
+    #[test]
+    fn test_nested_dependency_resolution() {
+        let mut container = Container::new();
+        container.register::<dyn Greeter, EnglishGreeter>();
+        container.register::<GreeterService, GreeterService>();
+
+        let service = container.get::<GreeterService>();
+        assert_eq!(service.greeter.greet(), "Hello");
+    }
+
+    #[test]
+    #[should_panic(expected = "not registered to Container")]
+    fn test_get_unregistered_panics() {
+        let container = Container::new();
+        let _ = container.get::<dyn Greeter>();
+    }
+
+    #[test]
+    #[should_panic(expected = "not registered to Container")]
+    fn test_get_all_unregistered_panics() {
+        let container = Container::new();
+        let _ = container.get_all::<dyn Greeter>();
+    }
+
+    #[test]
+    #[should_panic(expected = "Container::get() expects one implementation")]
+    fn test_get_multiple_registered_panics() {
+        let mut container = Container::new();
+        container.register::<dyn Greeter, EnglishGreeter>();
+        container.register::<dyn Greeter, SpanishGreeter>();
+
+        let _ = container.get::<dyn Greeter>();
     }
 }
