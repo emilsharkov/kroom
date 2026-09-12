@@ -56,21 +56,23 @@ pub fn injectable(
     parse_macro_input!(attr with parser);
 
     let item_struct = parse_macro_input!(item as ItemStruct);
-    let struct_ident = item_struct.ident;
+    let struct_ident = &item_struct.ident;
     
     let struct_type: Type = parse_quote!(#struct_ident);
     let target_type: Type = args.target_type.unwrap_or_else(|| {
-        let target_type: Type = parse_quote!(#struct_ident);
-        return target_type;
+        parse_quote!(#struct_ident)
     });
     let _scope = args.scope.unwrap_or(Scope::Singleton);
 
     let target_type_injectable = generate_injectable(&target_type, &struct_type);
-    let struct_type_injectable = match &target_type == &struct_type {
-        true => Some(generate_injectable(&target_type, &struct_type)),
-        false => None
+    let struct_type_injectable = if target_type != struct_type {
+        Some(generate_injectable(&struct_type, &struct_type))
+    } else {
+        None
     };
     let output = quote!(
+        #item_struct
+
         #target_type_injectable
         #struct_type_injectable
     );
@@ -79,17 +81,17 @@ pub fn injectable(
 
 fn generate_injectable(
     target_type: &Type,
-    struct_type: &Type
+    struct_type: &Type,
 ) -> proc_macro2::TokenStream {
     quote!(
-        impl Injectable<#target_type> for struct_type {
-            fn __kroom_construct(_container: &Container) -> Arc<#target_type> {
-                Arc::new(#struct_type {})
+        impl ::kroom_core::injectable::Injectable<#target_type> for #struct_type {
+            fn __kroom_construct(_container: &::kroom_core::container::Container) -> ::std::sync::Arc<#target_type> {
+                ::std::sync::Arc::new(#struct_type {})
             }
         }
 
-        inventory::submit! {
-            Registration::of::<#target_type,#struct_type>()
+        ::kroom_core::inventory::submit! {
+            ::kroom_core::registration::Registration::of::<#target_type, #struct_type>()
         }
-    ).into()
+    )
 }

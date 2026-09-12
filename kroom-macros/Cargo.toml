@@ -9,8 +9,7 @@ license = "MIT"
 proc-macro = true
 
 [dependencies]
+kroom-core = { path = '../kroom-core' }
 syn = { version = "2", features = ["full","extra-traits"] }
 quote = "1"
 proc-macro2 = "1"
-inventory = "0.3.24"
-
