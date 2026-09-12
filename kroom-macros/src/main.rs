@@ -1,7 +1,7 @@
-use kroom_macros::injectable;
+// use kroom_macros::injectable;
 
-#[injectable]
-struct Concrete;
+// #[injectable]
+// struct Concrete;
 
 fn main() {
 }
