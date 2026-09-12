@@ -2,7 +2,7 @@
 mod common;
 
 use std::{error::Error, sync::Arc};
-use syringe_core::container::Container;
+use kroom_core::container::Container;
 use common::user_repo::UserRepo;
 
 fn main() -> Result<(), Box<dyn Error>> {

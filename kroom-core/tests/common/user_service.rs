@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use syringe_core::{container::Container, injectable::Injectable};
+use kroom_core::{container::Container, injectable::Injectable};
 use crate::common::{user::User, user_repo::UserRepo};
 
 pub trait UserService: Send + Sync {

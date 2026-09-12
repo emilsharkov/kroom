@@ -47,16 +47,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "syringe-core"
+name = "kroom-core"
 version = "0.1.0"
 dependencies = [
  "inventory",
 ]
 
 [[package]]
-name = "syringe-macros"
+name = "kroom-macros"
 version = "0.1.0"
 dependencies = [
+ "inventory",
  "proc-macro2",
  "quote",
  "syn",

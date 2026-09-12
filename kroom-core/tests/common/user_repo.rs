@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use syringe_core::{container::Container, injectable::Injectable, registration::Registration};
+use kroom_core::{container::Container, injectable::Injectable, registration::Registration};
 use crate::common::user::User;
 
 pub trait UserRepo: Send + Sync {
@@ -50,7 +50,7 @@ impl UserRepo for UserPgRepo {
 
 impl Injectable<dyn UserRepo> for UserPgRepo {
     fn __syringe_construct(_container: &Container) -> Arc<dyn UserRepo> {
-        Arc::new(UserPgRepo)
+        Arc::new(UserPgRepo {})
     }
 }
 
@@ -60,7 +60,7 @@ inventory::submit! {
 
 impl Injectable<UserPgRepo> for UserPgRepo {
     fn __syringe_construct(_container: &Container) -> Arc<UserPgRepo> {
-        Arc::new(UserPgRepo)
+        Arc::new(UserPgRepo {})
     }
 }
 

@@ -1,7 +1,7 @@
 mod common;
 
 use std::sync::Arc;
-use syringe_core::container::Container;
+use kroom_core::container::Container;
 use common::{
     user_repo::{UserMockRepo, UserPgRepo, UserRepo},
     user_service::{DefaultUserService, UserService},

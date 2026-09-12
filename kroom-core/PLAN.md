@@ -16,8 +16,8 @@ struct User {
 pub trait UserRepository {
     fn find_one(&self, id: &str) -> User;
 }
-struct UserPgRepository;
 #[injectable]
+struct UserPgRepository;
 impl UserRepository for UserPgRepository {
     fn find_one(&self, id: &str) -> User {
         User {
@@ -31,11 +31,11 @@ impl UserRepository for UserPgRepository {
 pub trait UserService {
     fn find_one(&self, id: &str) -> User;
 }
+#[injectable]
 struct DefaultUserService {
     #[inject]
     user_repository: Arc<dyn UserRepository>;
 }
-#[injectable]
 impl UserService for DefaultUserService {
     fn find_one(&self, id: &str) -> User {
         self.user_repository.find_one(id)
@@ -58,6 +58,7 @@ impl Injectable for DefaultUserService {
 }
 
 // Controller
+#[injectable]
 struct UserController {
     #[inject]
     user_service: Arc<dyn UserService>;
