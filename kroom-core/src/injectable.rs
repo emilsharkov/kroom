@@ -6,7 +6,7 @@ pub trait Injectable<Interface>
 where 
     Interface: ?Sized + 'static, 
 {
-    fn __syringe_construct(
+    fn __kroom_construct(
         container: &Container
     ) -> Arc<Interface>;
 }

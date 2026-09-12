@@ -83,7 +83,7 @@ fn generate_injectable(
 ) -> proc_macro2::TokenStream {
     quote!(
         impl Injectable<#target_type> for struct_type {
-            fn __syringe_construct(_container: &Container) -> Arc<#target_type> {
+            fn __kroom_construct(_container: &Container) -> Arc<#target_type> {
                 Arc::new(#struct_type {})
             }
         }

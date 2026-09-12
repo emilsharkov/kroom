@@ -31,7 +31,7 @@ impl Container {
     {
         let interface_id: TypeId = TypeId::of::<Interface>();
         let erased_constructor: Constructor = |container: &Container| -> Box<dyn Any> {
-            let target: Arc<Interface> = Implementation::__syringe_construct(container);
+            let target: Arc<Interface> = Implementation::__kroom_construct(container);
             Box::new(target)
         };
         self.register_inner(&interface_id, &erased_constructor);
@@ -141,13 +141,13 @@ mod tests {
     }
 
     impl Injectable<EnglishGreeter> for EnglishGreeter {
-        fn __syringe_construct(_container: &Container) -> Arc<EnglishGreeter> {
+        fn __kroom_construct(_container: &Container) -> Arc<EnglishGreeter> {
             Arc::new(EnglishGreeter)
         }
     }
 
     impl Injectable<dyn Greeter> for EnglishGreeter {
-        fn __syringe_construct(_container: &Container) -> Arc<dyn Greeter> {
+        fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
             Arc::new(EnglishGreeter)
         }
     }
@@ -160,7 +160,7 @@ mod tests {
     }
 
     impl Injectable<dyn Greeter> for SpanishGreeter {
-        fn __syringe_construct(_container: &Container) -> Arc<dyn Greeter> {
+        fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
             Arc::new(SpanishGreeter)
         }
     }
@@ -170,7 +170,7 @@ mod tests {
     }
 
     impl Injectable<GreeterService> for GreeterService {
-        fn __syringe_construct(container: &Container) -> Arc<GreeterService> {
+        fn __kroom_construct(container: &Container) -> Arc<GreeterService> {
             let greeter = container.get::<dyn Greeter>();
             Arc::new(GreeterService { greeter })
         }

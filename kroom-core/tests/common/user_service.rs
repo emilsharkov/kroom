@@ -17,14 +17,14 @@ impl UserService for DefaultUserService {
 }
 
 impl Injectable<dyn UserService> for DefaultUserService {
-    fn __syringe_construct(container: &Container) -> Arc<dyn UserService> {
+    fn __kroom_construct(container: &Container) -> Arc<dyn UserService> {
         let repo = container.get::<dyn UserRepo>();
         Arc::new(DefaultUserService { repo })
     }
 }
 
 impl Injectable<DefaultUserService> for DefaultUserService {
-    fn __syringe_construct(container: &Container) -> Arc<DefaultUserService> {
+    fn __kroom_construct(container: &Container) -> Arc<DefaultUserService> {
         let repo = container.get::<dyn UserRepo>();
         Arc::new(DefaultUserService { repo })
     }

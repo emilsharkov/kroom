@@ -18,7 +18,7 @@ impl Registration {
         Self {
             interface_id: TypeId::of::<Interface>(),
             constructor: |container| {
-                let target = Implementation::__syringe_construct(container);
+                let target = Implementation::__kroom_construct(container);
                 Box::new(target)
             },
         }

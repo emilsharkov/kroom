@@ -1,4 +1,4 @@
-# Syringe
+# kroom
 Using IoC containers for dependency injection in Rust
 
 
@@ -47,10 +47,10 @@ impl UserService for DefaultUserService {
 // It uses the inject macro to figure out if/which things it needs from the container
 // Injectable also registers the implementation to the interface to the constructor (somehow at compile time using inventory!)
 trait Injectable {
-    fn __syringe_construct(container: Container);
+    fn __kroom_construct(container: Container);
 }
 impl Injectable for DefaultUserService {
-    fn __syringe_construct(container: Container) -> Self {
+    fn __kroom_construct(container: Container) -> Self {
         Self {
             user_repository: container.get("UserRepository")
         }
@@ -81,7 +81,7 @@ trait HttpController: Injectable {
 }
 
 impl HttpController for UserController {
-    fn __syringe_construct(container: Container) -> Self {
+    fn __kroom_construct(container: Container) -> Self {
         Self {
             user_service: container.get("UserService")
         }

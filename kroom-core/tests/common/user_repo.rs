@@ -18,7 +18,7 @@ impl UserRepo for UserMockRepo {
 }
 
 impl Injectable<dyn UserRepo> for UserMockRepo {
-    fn __syringe_construct(_container: &Container) -> Arc<dyn UserRepo> {
+    fn __kroom_construct(_container: &Container) -> Arc<dyn UserRepo> {
         Arc::new(UserMockRepo)
     }
 }
@@ -28,7 +28,7 @@ inventory::submit! {
 }
 
 impl Injectable<UserMockRepo> for UserMockRepo {
-    fn __syringe_construct(_container: &Container) -> Arc<UserMockRepo> {
+    fn __kroom_construct(_container: &Container) -> Arc<UserMockRepo> {
         Arc::new(UserMockRepo)
     }
 }
@@ -49,7 +49,7 @@ impl UserRepo for UserPgRepo {
 }
 
 impl Injectable<dyn UserRepo> for UserPgRepo {
-    fn __syringe_construct(_container: &Container) -> Arc<dyn UserRepo> {
+    fn __kroom_construct(_container: &Container) -> Arc<dyn UserRepo> {
         Arc::new(UserPgRepo {})
     }
 }
@@ -59,7 +59,7 @@ inventory::submit! {
 }
 
 impl Injectable<UserPgRepo> for UserPgRepo {
-    fn __syringe_construct(_container: &Container) -> Arc<UserPgRepo> {
+    fn __kroom_construct(_container: &Container) -> Arc<UserPgRepo> {
         Arc::new(UserPgRepo {})
     }
 }
