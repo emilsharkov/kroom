@@ -1,6 +1,8 @@
 [package]
 name = "kroom"
+description = "A dependency injection framework similar to SpringBoot and NestJS"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
