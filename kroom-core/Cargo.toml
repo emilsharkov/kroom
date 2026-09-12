@@ -1,7 +1,9 @@
 [package]
 name = "kroom-core"
+description = "Core utils for kroom dependency injection framework"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [dependencies]
 inventory = "0.3.24"

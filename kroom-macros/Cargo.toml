@@ -1,7 +1,9 @@
 [package]
 name = "kroom-macros"
+description = "Macro utils for kroom dependency injection library"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
 [lib]
 proc-macro = true
