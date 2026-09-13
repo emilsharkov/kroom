@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use kroom_macros::injectable;
 use kroom_core::container::Container;
 
@@ -47,7 +49,7 @@ struct Concrete {
     solids: Vec<dyn Granular>
 }
 
-fn main() {
+fn main() -> Result<(),Box<dyn Error>> {
     let mut container = Container::new();
     container.auto_register();
     let dyn_trait_struct = container.get::<dyn Trait>();
@@ -62,4 +64,5 @@ fn main() {
     concrete_struct.solids.iter().for_each(|solid| solid.get_volume());
     println!("Dyn Solid Structs");
     dyn_solid_structs.iter().for_each(|solid| solid.get_volume());
+    Ok(())
 }
