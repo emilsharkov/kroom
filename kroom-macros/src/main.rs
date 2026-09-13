@@ -1,16 +1,29 @@
-use std::sync::Arc;
-
 use kroom_macros::injectable;
 use kroom_core::container::Container;
 
-trait Trait {}
+#[injectable]
+struct Asphalt;
 
-impl Trait for Concrete {}
+impl Asphalt {
+    fn exist(&self) {
+        println!("I exist!")
+    }
+}
+
+trait Trait {
+    fn action(&self);
+}
+
+impl Trait for Concrete {
+    fn action(&self) {
+        println!("Action complete")
+    }
+}
 
 #[injectable(type = dyn Trait)]
 struct Concrete {
     #[inject]
-    is_true: Arc<bool>,
+    asphalt: Asphalt,
 }
 
 fn main() {
@@ -18,5 +31,8 @@ fn main() {
     container.auto_register();
     let dyn_trait_struct = container.get::<dyn Trait>();
     let concrete_struct = container.get::<Concrete>();
-    println!("Succeeded");
+
+    dyn_trait_struct.action();
+    concrete_struct.action();
+    concrete_struct.asphalt.exist();
 }

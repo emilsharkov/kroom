@@ -43,14 +43,16 @@ pub fn injectable(
     });
     let _scope = args.scope.unwrap_or(Scope::Singleton);
 
-    let injected_fields = get_injected_fields(&item_struct);
-    strip_inject_from_struct(&mut item_struct);
-
+    let injected_fields = get_injected_fields_for_constructor(&item_struct);
     let target_type_injectable = generate_injectable(&target_type, &struct_type, &injected_fields);
     let struct_type_injectable = match target_type != struct_type {
         true => Some(generate_injectable(&struct_type, &struct_type, &injected_fields)),
         false => None
     };
+
+    wrap_injected_field_with_arc(&mut item_struct);
+    strip_inject_from_struct_fields(&mut item_struct);
+
     let output = quote!(
         #item_struct
 
@@ -60,10 +62,26 @@ pub fn injectable(
     output.into()
 }
 
-fn strip_inject_from_struct(item_struct: &mut ItemStruct) {
-    item_struct.attrs.retain(|attribute| {
-        return !attribute.meta.path().is_ident("inject");
-    })
+fn wrap_injected_field_with_arc(item_struct: &mut ItemStruct) {
+    for field in item_struct.fields.iter_mut() {
+        let field_has_inject_attribute = field.attrs.iter().any(|attribute| {
+            return attribute.meta.path().is_ident("inject");
+        });
+        if field_has_inject_attribute {
+            let injected_type = &field.ty;
+            field.ty = parse_quote!(
+                ::std::sync::Arc<#injected_type>
+            );
+        }
+    }
+}
+
+fn strip_inject_from_struct_fields(item_struct: &mut ItemStruct) {
+    for field in item_struct.fields.iter_mut() {
+        field.attrs.retain(|attribute| {
+            return !attribute.path().is_ident("inject");
+        });
+    }
 }
 
 fn generate_injectable(
@@ -114,7 +132,7 @@ fn parse_macro_args(
     Ok(args)
 }
 
-fn get_injected_fields(
+fn get_injected_fields_for_constructor(
     item_struct: &ItemStruct
 ) -> Vec<proc_macro2::TokenStream> {
     let mut injected_fields: Vec<proc_macro2::TokenStream> = Vec::new();
