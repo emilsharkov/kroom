@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use kroom_macros::injectable;
 use kroom_core::container::Container;
 
@@ -6,7 +8,10 @@ trait Trait {}
 impl Trait for Concrete {}
 
 #[injectable(type = dyn Trait)]
-struct Concrete;
+struct Concrete {
+    #[inject]
+    is_true: Arc<bool>,
+}
 
 fn main() {
     let mut container = Container::new();
