@@ -2,11 +2,30 @@ use kroom_macros::injectable;
 use kroom_core::container::Container;
 
 #[injectable]
-struct Asphalt;
+struct Water;
+impl Water {
+    fn slosh(&self) {
+        println!("I am water sloshing");
+    }
+}
 
-impl Asphalt {
-    fn exist(&self) {
-        println!("I exist!")
+trait Granular {
+    fn get_volume(&self);
+}
+
+#[injectable(type = dyn Granular)]
+struct Sand;
+impl Granular for Sand {
+    fn get_volume(&self) {
+        println!("Sand's volume");
+    }
+}
+
+#[injectable(type = dyn Granular)]
+struct Gravel;
+impl Granular for Gravel {
+    fn get_volume(&self) {
+        println!("Gravel's volume");
     }
 }
 
@@ -23,7 +42,9 @@ impl Trait for Concrete {
 #[injectable(type = dyn Trait)]
 struct Concrete {
     #[inject]
-    asphalt: Asphalt,
+    liquid: Water,
+    #[multi_inject]
+    solids: Vec<dyn Granular>
 }
 
 fn main() {
@@ -31,8 +52,14 @@ fn main() {
     container.auto_register();
     let dyn_trait_struct = container.get::<dyn Trait>();
     let concrete_struct = container.get::<Concrete>();
+    let dyn_solid_structs = container.get_all::<dyn Granular>();
 
+    println!("Dyn Struct");
     dyn_trait_struct.action();
+    println!("Concrete Struct");
     concrete_struct.action();
-    concrete_struct.asphalt.exist();
+    concrete_struct.liquid.slosh();
+    concrete_struct.solids.iter().for_each(|solid| solid.get_volume());
+    println!("Dyn Solid Structs");
+    dyn_solid_structs.iter().for_each(|solid| solid.get_volume());
 }
