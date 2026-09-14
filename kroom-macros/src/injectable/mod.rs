@@ -1,8 +1,9 @@
+use kroom_core::scope::Scope;
 use proc_macro::TokenStream;
 use syn::{ItemStruct, Type, parse_macro_input, parse_quote};
 use quote::quote;
 
-use crate::injectable::{args::{MacroArgs, Scope, parse_macro_args}, codegen::generate_injectable, fields::{get_injected_fields_for_constructor, get_multi_injected_fields_for_constructor, strip_attribute_from_struct_fields, wrap_injected_field_with_arc, wrap_multi_injected_field_with_arc}};
+use crate::injectable::{args::{MacroArgs, parse_macro_args}, codegen::generate_injectable, fields::{get_injected_fields_for_constructor, get_multi_injected_fields_for_constructor, strip_attribute_from_struct_fields, wrap_injected_field_with_arc, wrap_multi_injected_field_with_arc}};
 
 mod args;
 mod fields;
