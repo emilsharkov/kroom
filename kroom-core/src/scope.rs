@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Scope {
     Singleton,
     Transient,
-    Scoped
 }
 impl FromStr for Scope {
     type Err = String;
@@ -12,7 +12,6 @@ impl FromStr for Scope {
         match s.to_lowercase().as_ref() {
             "singleton" => Ok(Scope::Singleton),
             "transient" => Ok(Scope::Transient),
-            "scoped" => Ok(Scope::Scoped),
             _ => Err(format!("{} is not a valid Scope",s)),
         }
     }

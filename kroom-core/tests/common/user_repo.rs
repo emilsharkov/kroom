@@ -2,12 +2,11 @@ use std::sync::Arc;
 use kroom_core::{container::Container, injectable::Injectable, registration::Registration};
 use crate::common::user::User;
 
-pub trait UserRepo: Send + Sync {
+pub trait UserRepo {
     fn find_one(&self, user_id: &str) -> User;
 }
 
 pub struct UserMockRepo;
-
 impl UserRepo for UserMockRepo {
     fn find_one(&self, _user_id: &str) -> User {
         User {
@@ -21,6 +20,14 @@ impl Injectable<dyn UserRepo> for UserMockRepo {
     fn __kroom_construct(_container: &Container) -> Arc<dyn UserRepo> {
         Arc::new(UserMockRepo)
     }
+
+    fn __kroom_scope() -> kroom_core::scope::Scope {
+        kroom_core::scope::Scope::Singleton
+    }
+
+    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+        vec![]
+    }
 }
 
 inventory::submit! {
@@ -30,6 +37,14 @@ inventory::submit! {
 impl Injectable<UserMockRepo> for UserMockRepo {
     fn __kroom_construct(_container: &Container) -> Arc<UserMockRepo> {
         Arc::new(UserMockRepo)
+    }
+
+    fn __kroom_scope() -> kroom_core::scope::Scope {
+        kroom_core::scope::Scope::Singleton
+    }
+
+    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+        vec![]
     }
 }
 
@@ -52,6 +67,14 @@ impl Injectable<dyn UserRepo> for UserPgRepo {
     fn __kroom_construct(_container: &Container) -> Arc<dyn UserRepo> {
         Arc::new(UserPgRepo {})
     }
+
+    fn __kroom_scope() -> kroom_core::scope::Scope {
+        kroom_core::scope::Scope::Singleton
+    }
+
+    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+        vec![]
+    }
 }
 
 inventory::submit! {
@@ -61,6 +84,14 @@ inventory::submit! {
 impl Injectable<UserPgRepo> for UserPgRepo {
     fn __kroom_construct(_container: &Container) -> Arc<UserPgRepo> {
         Arc::new(UserPgRepo {})
+    }
+
+    fn __kroom_scope() -> kroom_core::scope::Scope {
+        kroom_core::scope::Scope::Singleton
+    }
+
+    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+        vec![]
     }
 }
 

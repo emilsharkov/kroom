@@ -15,6 +15,16 @@ pub fn generate_injectable(
                     #(#multi_injected_fields)*
                 })
             }
+
+            fn __kroom_scope() -> kroom_core::scope::Scope {
+                ::kroom_core::scope::Scope::Singleton
+            }
+
+            fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+                vec![
+                    ::std::any::TypeId::of::<dyn UserRepo>()
+                ]
+            }
         }
 
         ::kroom_core::inventory::submit! {

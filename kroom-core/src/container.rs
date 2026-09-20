@@ -8,19 +8,23 @@ pub type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
     interface_constructor_registry: HashMap<TypeId, Vec<Constructor>>,
+    singleton_registry: HashMap<TypeId, Arc<dyn Any>>,
 }
 
 impl Container {
     pub fn new() -> Self {
         Self {
             interface_constructor_registry: HashMap::new(),
+            singleton_registry: HashMap::new(),
         }
     }
 
     pub fn auto_register(&mut self) {
         for registration in inventory::iter::<Registration> {
-            let Registration { interface_id, constructor } = registration;
-            self.register_inner(interface_id, constructor);
+            self.register_inner(
+                &registration.interface_id,
+                &registration.constructor
+            );
         }
     }
     
@@ -37,7 +41,11 @@ impl Container {
         self.register_inner(&interface_id, &erased_constructor);
     }
 
-    pub fn register_inner(&mut self, interface_id: &TypeId, constructor: &Constructor) {
+    pub fn register_inner(
+        &mut self, 
+        interface_id: &TypeId, 
+        constructor: &Constructor,
+    ) {
         let constructors = self.interface_constructor_registry
             .entry(*interface_id)
             .or_insert_with(Vec::new);

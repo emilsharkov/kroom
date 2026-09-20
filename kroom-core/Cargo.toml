@@ -6,4 +6,5 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
+daggy = "0.9.0"
 inventory = "0.3.24"
