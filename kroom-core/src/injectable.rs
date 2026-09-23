@@ -12,13 +12,9 @@ where
 
     fn __kroom_scope() -> Scope;
     
-    fn __kroom_dependent_types() -> Vec<TypeId>;
+    fn __kroom_dependent_types() -> Vec<(TypeId,String)>;
+
+    fn __kroom_interface_name() -> String;
     
-    // fn __kroom_scope() -> &'static Scope {
-    //     &Scope::Singleton
-    // }
-    
-    // fn __kroom_dependencies() -> &'static [TypeId] {
-    //     &[]
-    // }
+    fn __kroom_implementation_name() -> String;
 }

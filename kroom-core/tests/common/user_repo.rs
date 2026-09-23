@@ -25,8 +25,16 @@ impl Injectable<dyn UserRepo> for UserMockRepo {
         kroom_core::scope::Scope::Singleton
     }
 
-    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+    fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
         vec![]
+    }
+
+    fn __kroom_interface_name() -> String {
+        std::any::type_name::<dyn UserRepo>().to_string()
+    }
+    
+    fn __kroom_implementation_name() -> String {
+        std::any::type_name::<UserMockRepo>().to_string()
     }
 }
 
@@ -43,8 +51,16 @@ impl Injectable<UserMockRepo> for UserMockRepo {
         kroom_core::scope::Scope::Singleton
     }
 
-    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+    fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
         vec![]
+    }
+
+    fn __kroom_interface_name() -> String {
+        std::any::type_name::<UserMockRepo>().to_string()
+    }
+
+    fn __kroom_implementation_name() -> String {
+        std::any::type_name::<UserMockRepo>().to_string()
     }
 }
 
@@ -72,8 +88,16 @@ impl Injectable<dyn UserRepo> for UserPgRepo {
         kroom_core::scope::Scope::Singleton
     }
 
-    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+    fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
         vec![]
+    }
+
+    fn __kroom_interface_name() -> String {
+        std::any::type_name::<dyn UserRepo>().to_string()
+    }
+
+    fn __kroom_implementation_name() -> String {
+        std::any::type_name::<UserPgRepo>().to_string()
     }
 }
 
@@ -90,8 +114,16 @@ impl Injectable<UserPgRepo> for UserPgRepo {
         kroom_core::scope::Scope::Singleton
     }
 
-    fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+    fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
         vec![]
+    }
+
+    fn __kroom_interface_name() -> String {
+        std::any::type_name::<UserPgRepo>().to_string()
+    }
+
+    fn __kroom_implementation_name() -> String {
+        std::any::type_name::<UserPgRepo>().to_string()
     }
 }
 

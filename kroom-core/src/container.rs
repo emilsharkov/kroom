@@ -1,21 +1,27 @@
 use std::collections::HashMap;
 use std::any::{Any, TypeId, type_name, type_name_of_val};
+use std::error::Error;
 use std::sync::Arc;
+use crate::dependency_resolver::DependencyResolver;
 use crate::injectable::Injectable;
 use crate::registration::Registration;
 
 pub type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
+    is_resolved: bool,
+    dependency_resolver: DependencyResolver,
     interface_constructor_registry: HashMap<TypeId, Vec<Constructor>>,
-    singleton_registry: HashMap<TypeId, Arc<dyn Any>>,
+    // singleton_registry: HashMap<TypeId, Arc<dyn Any>>,
 }
 
 impl Container {
     pub fn new() -> Self {
         Self {
+            is_resolved: false,
+            dependency_resolver: DependencyResolver::new(),
             interface_constructor_registry: HashMap::new(),
-            singleton_registry: HashMap::new(),
+            // singleton_registry: HashMap::new(),
         }
     }
 
@@ -46,6 +52,7 @@ impl Container {
         interface_id: &TypeId, 
         constructor: &Constructor,
     ) {
+        self.dependency_resolver.register::<>();
         let constructors = self.interface_constructor_registry
             .entry(*interface_id)
             .or_insert_with(Vec::new);
@@ -53,6 +60,8 @@ impl Container {
     }
 
     pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
+        self.assert_resolved();
+        
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
         
@@ -96,6 +105,8 @@ impl Container {
     }
 
     pub fn get_all<Interface: ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
+        self.assert_resolved();
+        
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
         
@@ -131,6 +142,16 @@ impl Container {
         
         all_instances
     }
+
+    fn assert_resolved(&self) {
+        assert!(self.is_resolved, "Container hasn't been resolved yet. Please call Container::resolve() beforehand");
+    }
+
+    pub fn resolve(&mut self) -> Result<(),Box<dyn Error>> {
+        self.dependency_resolver.resolve()?;
+        self.is_resolved = true;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -152,11 +173,35 @@ mod tests {
         fn __kroom_construct(_container: &Container) -> Arc<EnglishGreeter> {
             Arc::new(EnglishGreeter)
         }
+
+        fn __kroom_scope() -> crate::scope::Scope {
+            crate::scope::Scope::Singleton
+        }
+
+        fn __kroom_dependent_types() -> Vec<TypeId> {
+            vec![]
+        }
+
+        fn __kroom_implementation_name() -> String {
+            type_name::<EnglishGreeter>().to_string()
+        }
     }
 
     impl Injectable<dyn Greeter> for EnglishGreeter {
         fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
             Arc::new(EnglishGreeter)
+        }
+
+        fn __kroom_scope() -> crate::scope::Scope {
+            crate::scope::Scope::Singleton
+        }
+
+        fn __kroom_dependent_types() -> Vec<TypeId> {
+            vec![]
+        }
+
+        fn __kroom_implementation_name() -> String {
+            type_name::<EnglishGreeter>().to_string()
         }
     }
 
@@ -171,6 +216,18 @@ mod tests {
         fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
             Arc::new(SpanishGreeter)
         }
+
+        fn __kroom_scope() -> crate::scope::Scope {
+            crate::scope::Scope::Singleton
+        }
+
+        fn __kroom_dependent_types() -> Vec<TypeId> {
+            vec![]
+        }
+
+        fn __kroom_implementation_name() -> String {
+            type_name::<SpanishGreeter>().to_string()
+        }
     }
 
     struct GreeterService {
@@ -181,6 +238,20 @@ mod tests {
         fn __kroom_construct(container: &Container) -> Arc<GreeterService> {
             let greeter = container.get::<dyn Greeter>();
             Arc::new(GreeterService { greeter })
+        }
+
+        fn __kroom_scope() -> crate::scope::Scope {
+            crate::scope::Scope::Singleton
+        }
+
+        fn __kroom_dependent_types() -> Vec<TypeId> {
+            vec![
+                std::any::TypeId::of::<dyn Greeter>()
+            ]
+        }
+
+        fn __kroom_implementation_name() -> String {
+            type_name::<GreeterService>().to_string()
         }
     }
 

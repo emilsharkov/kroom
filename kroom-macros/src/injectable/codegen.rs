@@ -16,14 +16,25 @@ pub fn generate_injectable(
                 })
             }
 
-            fn __kroom_scope() -> kroom_core::scope::Scope {
+            fn __kroom_scope() -> ::kroom_core::scope::Scope {
                 ::kroom_core::scope::Scope::Singleton
             }
 
-            fn __kroom_dependent_types() -> Vec<std::any::TypeId> {
+            fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
                 vec![
-                    ::std::any::TypeId::of::<dyn UserRepo>()
+                    (
+                        ::std::any::TypeId::of::<#target_type>(),
+                        ::std::any::type_name::<#target_type>().to_string()
+                    )
                 ]
+            }
+
+            fn __kroom_interface_name() -> String {
+                ::std::any::type_name::<#target_type>().to_string()
+            }
+            
+            fn __kroom_implementation_name() -> String {
+                ::std::any::type_name::<#struct_type>().to_string()
             }
         }
 
