@@ -3,15 +3,16 @@ use std::any::{Any, TypeId, type_name, type_name_of_val};
 use std::error::Error;
 use std::sync::Arc;
 use crate::container_validator::ContainerValidator;
-use crate::injectable::Injectable;
+use crate::injectable::{self, Injectable};
 use crate::registration::Registration;
 use crate::scope::Scope;
+use crate::singleton_key::SingletonKey;
 
 pub type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
     type_to_registrations: HashMap<TypeId, Vec<Registration>>,
-    type_to_singletons: HashMap<TypeId, Vec<Arc<dyn Any>>>,
+    type_to_singletons: HashMap<SingletonKey, Box<dyn Any>>,
 }
 
 impl Container {
@@ -28,42 +29,59 @@ impl Container {
         &self, 
         registration: &Registration
     ) -> Arc<Interface> {
-        let interface_name: &str = type_name::<Interface>();
         let constructor: Constructor = registration.constructor;
         let boxed_generic_injectable: Box<dyn Any> = constructor(self);
-        let boxed_arc_injectable: Box<Arc<Interface>> = boxed_generic_injectable
-            .downcast::<Arc<Interface>>()
-            .unwrap_or_else(|boxed_any|{
-                let any_interface_name: &str = type_name_of_val(&*boxed_any);
+        let injectable: Arc<Interface> = self.extract_injectable(&boxed_generic_injectable);
+        injectable
+    } 
+
+    fn extract_injectable<Interface: ?Sized + 'static>(
+        &self, 
+        boxed_generic_injectable: &Box<dyn Any>
+    ) -> Arc<Interface> {
+        let arc_injectable = boxed_generic_injectable
+            .downcast_ref::<Arc<Interface>>()
+            .unwrap_or_else(|| {
+                let interface_name: &str = type_name::<Interface>();
+                let any_interface_name: &str = type_name_of_val(&**boxed_generic_injectable);
                 panic!(
-                    "Type mismatch during downcast. Expected: {:?} but received {:?}",
+                    "Type mismatch downcasting singleton. Expected: {:?} but received {:?}",
                     interface_name,
                     any_interface_name
                 )
             });
-        let arc_injectable: Arc<Interface> = *boxed_arc_injectable;
-        arc_injectable
-    } 
+        return Arc::clone(arc_injectable);
+    }
 
     fn get_singleton<Interface: ?Sized + 'static>(
-        &self,
+        &mut self,
         registration: &Registration
     ) -> Arc<Interface> {
-        let interface_id: TypeId = registration.interface_id;
-        let implementation_id: TypeId = registration.implementation_id;
-        if let Some(generic_injectables) = self.type_to_singletons.get(&interface_id) {
+        let singleton_key = SingletonKey::from_registration(registration);
+        if let Some(boxed_generic_injectable) = self.type_to_singletons.get(&singleton_key) {
+            let injectable: Arc<Interface> = self.extract_injectable(boxed_generic_injectable);
+            return injectable;
+        }
 
-        } else {
-            let arc_injectable: Arc<Interface> = self.create_injectable(registration);
-            self.type_to_singletons
-                .entry(interface_id)
-                .or_default()
-                .push(arc_injectable);
-            return arc_injectable;
+        let constructor: Constructor = registration.constructor;
+        let boxed_generic_injectable: Box<dyn Any> = constructor(self);
+        let injectable: Arc<Interface> = self.extract_injectable(&boxed_generic_injectable);
+        self.type_to_singletons.insert(singleton_key,boxed_generic_injectable);
+        injectable
+    }
+
+    fn get_injectable_by_registration<Interface: ?Sized + 'static>(
+        &mut self,
+        registration: &Registration,
+    ) -> Arc<Interface> {
+        let scope: Scope = (registration.scope)();
+        match &scope {
+            Scope::Singleton => self.get_singleton(registration),
+            Scope::Transient => self.create_injectable(registration)
         }
     }
 
-    pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
+    pub fn get<Interface: ?Sized + 'static>(&mut self) -> Arc<Interface> {
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
         
@@ -92,11 +110,8 @@ impl Container {
                 panic!("Expected one implementation for {:?}",interface_name)
             });
         
-        let scope: Scope = (registration.scope)();
-        match &scope {
-            Scope::Singleton => self.get_singleton(registration),
-            Scope::Transient => self.create_injectable(registration)
-        }
+        let injectable: Arc<Interface> = self.get_injectable_by_registration(registration);
+        injectable
     }
 
     pub fn get_all<Interface: ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
@@ -117,11 +132,8 @@ impl Container {
         let all_instances: Vec<Arc<Interface>> = registrations
             .iter()
             .map(|registration: &Registration| -> Arc<Interface> {
-                let scope: Scope = (registration.scope)();
-                match &scope {
-                    Scope::Singleton => self.get_singleton(registration),
-                    Scope::Transient => self.create_injectable(registration)
-                }
+                let injectable: Arc<Interface> = self.get_injectable_by_registration(registration);
+                injectable
             })
             .collect::<Vec<Arc<Interface>>>();
         
