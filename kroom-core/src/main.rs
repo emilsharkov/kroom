@@ -6,8 +6,7 @@ use kroom_core::container::Container;
 use common::user_repo::UserRepo;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut multi_container = Container::new();
-    multi_container.auto_register();
+    let mut multi_container = Container::new()?;
 
     let user_repos: Vec<Arc<dyn UserRepo>> = multi_container.get_all::<dyn UserRepo>();
     for repo in &user_repos {

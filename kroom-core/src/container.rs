@@ -2,95 +2,36 @@ use std::collections::HashMap;
 use std::any::{Any, TypeId, type_name, type_name_of_val};
 use std::error::Error;
 use std::sync::Arc;
-use crate::dependency_resolver::DependencyResolver;
+use crate::container_validator::ContainerValidator;
 use crate::injectable::Injectable;
 use crate::registration::Registration;
+use crate::scope::Scope;
 
 pub type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
-    is_resolved: bool,
-    dependency_resolver: DependencyResolver,
-    interface_constructor_registry: HashMap<TypeId, Vec<Constructor>>,
-    // singleton_registry: HashMap<TypeId, Arc<dyn Any>>,
+    type_to_registrations: HashMap<TypeId, Vec<Registration>>,
+    type_to_singletons: HashMap<TypeId, Vec<Arc<dyn Any>>>,
 }
 
 impl Container {
-    pub fn new() -> Self {
-        Self {
-            is_resolved: false,
-            dependency_resolver: DependencyResolver::new(),
-            interface_constructor_registry: HashMap::new(),
-            // singleton_registry: HashMap::new(),
-        }
-    }
-
-    pub fn auto_register(&mut self) {
-        for registration in inventory::iter::<Registration> {
-            self.register_inner(
-                &registration.interface_id,
-                &registration.constructor
-            );
-        }
-    }
-    
-    pub fn register<Interface,Implementation>(&mut self)
-    where 
-        Interface: ?Sized + 'static,
-        Implementation: Injectable<Interface> + 'static,
-    {
-        let interface_id: TypeId = TypeId::of::<Interface>();
-        let erased_constructor: Constructor = |container: &Container| -> Box<dyn Any> {
-            let target: Arc<Interface> = Implementation::__kroom_construct(container);
-            Box::new(target)
+    pub fn new() -> Result<Self, Box<dyn Error>> {
+        ContainerValidator::new().resolve()?;
+        let container: Container = Self {
+            type_to_registrations: HashMap::new(),
+            type_to_singletons: HashMap::new()
         };
-        self.register_inner(&interface_id, &erased_constructor);
+        Ok(container)
     }
 
-    pub fn register_inner(
-        &mut self, 
-        interface_id: &TypeId, 
-        constructor: &Constructor,
-    ) {
-        self.dependency_resolver.register::<>();
-        let constructors = self.interface_constructor_registry
-            .entry(*interface_id)
-            .or_insert_with(Vec::new);
-        constructors.push(*constructor);
-    }
-
-    pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
-        self.assert_resolved();
-        
-        let interface_id: TypeId = TypeId::of::<Interface>();
+    fn create_injectable<Interface: ?Sized + 'static> (
+        &self, 
+        registration: &Registration
+    ) -> Arc<Interface> {
         let interface_name: &str = type_name::<Interface>();
-        
-        let interface_constructor_array: &Vec<Constructor> = self
-            .interface_constructor_registry
-            .get(&interface_id)
-            .unwrap_or_else(||{
-                panic!(
-                    "Interface {:?} with TypeId {:?} not registered to Container",
-                    interface_name,
-                    interface_id
-                )
-            });
-
-        if interface_constructor_array.len() != 1 {
-            panic!(
-                "Container::get() expects one implementation for {:?} but received {:?}",
-                interface_name, 
-                interface_constructor_array.len(),
-            )
-        }
-        
-        let interface_constructor = interface_constructor_array
-            .first()
-            .unwrap_or_else(||{
-                panic!("Expected one implementation for {:?}",interface_name)
-            });
-        let any_box: Box<dyn Any> = interface_constructor(self);
-        let boxed_arc: Box<Arc<Interface>> = any_box
+        let constructor: Constructor = registration.constructor;
+        let boxed_generic_injectable: Box<dyn Any> = constructor(self);
+        let boxed_arc_injectable: Box<Arc<Interface>> = boxed_generic_injectable
             .downcast::<Arc<Interface>>()
             .unwrap_or_else(|boxed_any|{
                 let any_interface_name: &str = type_name_of_val(&*boxed_any);
@@ -100,18 +41,34 @@ impl Container {
                     any_interface_name
                 )
             });
-        let arc_instance: Arc<Interface> = *boxed_arc;
-        arc_instance
+        let arc_injectable: Arc<Interface> = *boxed_arc_injectable;
+        arc_injectable
+    } 
+
+    fn get_singleton<Interface: ?Sized + 'static>(
+        &self,
+        registration: &Registration
+    ) -> Arc<Interface> {
+        let interface_id: TypeId = registration.interface_id;
+        let implementation_id: TypeId = registration.implementation_id;
+        if let Some(generic_injectables) = self.type_to_singletons.get(&interface_id) {
+
+        } else {
+            let arc_injectable: Arc<Interface> = self.create_injectable(registration);
+            self.type_to_singletons
+                .entry(interface_id)
+                .or_default()
+                .push(arc_injectable);
+            return arc_injectable;
+        }
     }
 
-    pub fn get_all<Interface: ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
-        self.assert_resolved();
-        
+    pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
         
-        let interface_constructor_array: &Vec<Constructor> = self
-            .interface_constructor_registry
+        let registrations: &Vec<Registration> = self
+            .type_to_registrations
             .get(&interface_id)
             .unwrap_or_else(||{
                 panic!(
@@ -121,211 +78,53 @@ impl Container {
                 )
             });
 
-        let all_instances: Vec<Arc<Interface>> = interface_constructor_array
+        if registrations.len() != 1 {
+            panic!(
+                "Container::get() expects one implementation for {:?} but received {:?}",
+                interface_name, 
+                registrations.len(),
+            )
+        }
+        
+        let registration = registrations
+            .first()
+            .unwrap_or_else(||{
+                panic!("Expected one implementation for {:?}",interface_name)
+            });
+        
+        let scope: Scope = (registration.scope)();
+        match &scope {
+            Scope::Singleton => self.get_singleton(registration),
+            Scope::Transient => self.create_injectable(registration)
+        }
+    }
+
+    pub fn get_all<Interface: ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
+        let interface_id: TypeId = TypeId::of::<Interface>();
+        let interface_name: &str = type_name::<Interface>();
+        
+        let registrations: &Vec<Registration> = self
+            .type_to_registrations
+            .get(&interface_id)
+            .unwrap_or_else(||{
+                panic!(
+                    "Interface {:?} with TypeId {:?} not registered to Container",
+                    interface_name,
+                    interface_id
+                )
+            });
+
+        let all_instances: Vec<Arc<Interface>> = registrations
             .iter()
-            .map(|constructor: &Constructor| -> Arc<Interface> {
-                let any_box: Box<dyn Any> = constructor(self);
-                let boxed_arc: Box<Arc<Interface>> = any_box
-                    .downcast::<Arc<Interface>>()
-                    .unwrap_or_else(|boxed_any|{
-                        let any_interface_name: &str = type_name_of_val(&*boxed_any);
-                        panic!(
-                            "Type mismatch during downcast. Expected: {:?} but received {:?}",
-                            interface_name,
-                            any_interface_name
-                        )
-                    });
-                let arc_trait: Arc<Interface> = *boxed_arc;
-                return arc_trait
+            .map(|registration: &Registration| -> Arc<Interface> {
+                let scope: Scope = (registration.scope)();
+                match &scope {
+                    Scope::Singleton => self.get_singleton(registration),
+                    Scope::Transient => self.create_injectable(registration)
+                }
             })
             .collect::<Vec<Arc<Interface>>>();
         
         all_instances
-    }
-
-    fn assert_resolved(&self) {
-        assert!(self.is_resolved, "Container hasn't been resolved yet. Please call Container::resolve() beforehand");
-    }
-
-    pub fn resolve(&mut self) -> Result<(),Box<dyn Error>> {
-        self.dependency_resolver.resolve()?;
-        self.is_resolved = true;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    trait Greeter: Send + Sync {
-        fn greet(&self) -> String;
-    }
-
-    struct EnglishGreeter;
-    impl Greeter for EnglishGreeter {
-        fn greet(&self) -> String {
-            "Hello".to_string()
-        }
-    }
-
-    impl Injectable<EnglishGreeter> for EnglishGreeter {
-        fn __kroom_construct(_container: &Container) -> Arc<EnglishGreeter> {
-            Arc::new(EnglishGreeter)
-        }
-
-        fn __kroom_scope() -> crate::scope::Scope {
-            crate::scope::Scope::Singleton
-        }
-
-        fn __kroom_dependent_types() -> Vec<TypeId> {
-            vec![]
-        }
-
-        fn __kroom_implementation_name() -> String {
-            type_name::<EnglishGreeter>().to_string()
-        }
-    }
-
-    impl Injectable<dyn Greeter> for EnglishGreeter {
-        fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
-            Arc::new(EnglishGreeter)
-        }
-
-        fn __kroom_scope() -> crate::scope::Scope {
-            crate::scope::Scope::Singleton
-        }
-
-        fn __kroom_dependent_types() -> Vec<TypeId> {
-            vec![]
-        }
-
-        fn __kroom_implementation_name() -> String {
-            type_name::<EnglishGreeter>().to_string()
-        }
-    }
-
-    struct SpanishGreeter;
-    impl Greeter for SpanishGreeter {
-        fn greet(&self) -> String {
-            "Hola".to_string()
-        }
-    }
-
-    impl Injectable<dyn Greeter> for SpanishGreeter {
-        fn __kroom_construct(_container: &Container) -> Arc<dyn Greeter> {
-            Arc::new(SpanishGreeter)
-        }
-
-        fn __kroom_scope() -> crate::scope::Scope {
-            crate::scope::Scope::Singleton
-        }
-
-        fn __kroom_dependent_types() -> Vec<TypeId> {
-            vec![]
-        }
-
-        fn __kroom_implementation_name() -> String {
-            type_name::<SpanishGreeter>().to_string()
-        }
-    }
-
-    struct GreeterService {
-        greeter: Arc<dyn Greeter>,
-    }
-
-    impl Injectable<GreeterService> for GreeterService {
-        fn __kroom_construct(container: &Container) -> Arc<GreeterService> {
-            let greeter = container.get::<dyn Greeter>();
-            Arc::new(GreeterService { greeter })
-        }
-
-        fn __kroom_scope() -> crate::scope::Scope {
-            crate::scope::Scope::Singleton
-        }
-
-        fn __kroom_dependent_types() -> Vec<TypeId> {
-            vec![
-                std::any::TypeId::of::<dyn Greeter>()
-            ]
-        }
-
-        fn __kroom_implementation_name() -> String {
-            type_name::<GreeterService>().to_string()
-        }
-    }
-
-    #[test]
-    fn test_register_and_get_concrete() {
-        let mut container = Container::new();
-        container.register::<EnglishGreeter, EnglishGreeter>();
-
-        let greeter = container.get::<EnglishGreeter>();
-        assert_eq!(greeter.greet(), "Hello");
-    }
-
-    #[test]
-    fn test_register_and_get_interface() {
-        let mut container = Container::new();
-        container.register::<dyn Greeter, EnglishGreeter>();
-
-        let greeter = container.get::<dyn Greeter>();
-        assert_eq!(greeter.greet(), "Hello");
-    }
-
-    #[test]
-    fn test_get_all_multiple_registrations() {
-        let mut container = Container::new();
-        container.register::<dyn Greeter, EnglishGreeter>();
-        container.register::<dyn Greeter, SpanishGreeter>();
-
-        let greeters = container.get_all::<dyn Greeter>();
-        assert_eq!(greeters.len(), 2);
-        assert_eq!(greeters[0].greet(), "Hello");
-        assert_eq!(greeters[1].greet(), "Hola");
-    }
-
-    #[test]
-    fn test_get_all_single_registration() {
-        let mut container = Container::new();
-        container.register::<dyn Greeter, SpanishGreeter>();
-
-        let greeters = container.get_all::<dyn Greeter>();
-        assert_eq!(greeters.len(), 1);
-        assert_eq!(greeters[0].greet(), "Hola");
-    }
-
-    #[test]
-    fn test_nested_dependency_resolution() {
-        let mut container = Container::new();
-        container.register::<dyn Greeter, EnglishGreeter>();
-        container.register::<GreeterService, GreeterService>();
-
-        let service = container.get::<GreeterService>();
-        assert_eq!(service.greeter.greet(), "Hello");
-    }
-
-    #[test]
-    #[should_panic(expected = "not registered to Container")]
-    fn test_get_unregistered_panics() {
-        let container = Container::new();
-        let _ = container.get::<dyn Greeter>();
-    }
-
-    #[test]
-    #[should_panic(expected = "not registered to Container")]
-    fn test_get_all_unregistered_panics() {
-        let container = Container::new();
-        let _ = container.get_all::<dyn Greeter>();
-    }
-
-    #[test]
-    #[should_panic(expected = "Container::get() expects one implementation")]
-    fn test_get_multiple_registered_panics() {
-        let mut container = Container::new();
-        container.register::<dyn Greeter, EnglishGreeter>();
-        container.register::<dyn Greeter, SpanishGreeter>();
-
-        let _ = container.get::<dyn Greeter>();
     }
 }

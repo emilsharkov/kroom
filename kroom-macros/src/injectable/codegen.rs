@@ -20,12 +20,12 @@ pub fn generate_injectable(
                 ::kroom_core::scope::Scope::Singleton
             }
 
-            fn __kroom_dependent_types() -> Vec<(std::any::TypeId,String)> {
+            fn __kroom_dependent_types() -> Vec<::kroom_core::registration::RegisteredType> {
                 vec![
-                    (
-                        ::std::any::TypeId::of::<#target_type>(),
-                        ::std::any::type_name::<#target_type>().to_string()
-                    )
+                    ::kroom_core::registration::RegisteredType {
+                        id: ::std::any::TypeId::of::<#target_type>(),
+                        name: ::std::any::type_name::<#target_type>().to_string()
+                    }
                 ]
             }
 

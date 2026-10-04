@@ -4,6 +4,11 @@ use crate::container::Constructor;
 use crate::injectable::Injectable;
 use crate::scope::Scope;
 
+pub struct RegisteredType {
+    pub id: TypeId,
+    pub name: String,
+}
+
 #[derive(Debug)]
 pub struct Registration {
     pub interface_id: TypeId,
@@ -11,7 +16,7 @@ pub struct Registration {
     pub implementation_name: fn() -> String,
     pub constructor: Constructor,
     pub scope: fn() -> Scope,
-    pub dependent_types: fn() -> Vec<(TypeId,String)>,
+    pub dependent_types: fn() -> Vec<RegisteredType>,
 }
 
 impl Registration {

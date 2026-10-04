@@ -1,6 +1,6 @@
-use std::{any::TypeId, sync::Arc};
+use std::sync::Arc;
 
-use crate::{container::Container, scope::Scope};
+use crate::{container::Container, registration::RegisteredType, scope::Scope};
 
 pub trait Injectable<Interface>
 where 
@@ -12,7 +12,7 @@ where
 
     fn __kroom_scope() -> Scope;
     
-    fn __kroom_dependent_types() -> Vec<(TypeId,String)>;
+    fn __kroom_dependent_types() -> Vec<RegisteredType>;
 
     fn __kroom_interface_name() -> String;
     

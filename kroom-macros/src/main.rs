@@ -50,8 +50,7 @@ struct Concrete {
 }
 
 fn main() -> Result<(),Box<dyn Error>> {
-    let mut container = Container::new();
-    container.auto_register();
+    let mut container = Container::new()?;
     let dyn_trait_struct = container.get::<dyn Trait>();
     let concrete_struct = container.get::<Concrete>();
     let dyn_solid_structs = container.get_all::<dyn Granular>();

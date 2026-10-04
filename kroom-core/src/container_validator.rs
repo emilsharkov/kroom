@@ -2,18 +2,20 @@ use std::{any::TypeId, collections::HashMap, error::Error};
 
 use daggy::{Dag, NodeIndex};
 
-use crate::{injectable::Injectable, registration::Registration};
+use crate::{injectable::Injectable, registration::{RegisteredType, Registration}};
 
-pub struct DependencyResolver {
+pub struct ContainerValidator {
     dag: Dag<TypeId,()>,
-    type_to_node_index: HashMap<TypeId,NodeIndex>
+    type_to_node_index: HashMap<TypeId,NodeIndex>,
+    node_to_registration: HashMap<NodeIndex,Registration>
 }
 
-impl DependencyResolver {
+impl ContainerValidator {
     pub fn new() -> Self {
-        DependencyResolver {
+        ContainerValidator {
             dag: Dag::new(),
-            type_to_node_index: HashMap::new()
+            type_to_node_index: HashMap::new(),
+            node_to_registration: HashMap::new()
         }
     }
 
@@ -36,24 +38,19 @@ impl DependencyResolver {
             .or_insert_with(|| self.dag.add_node(implementation_id));
     }
 
-    pub fn register_inner(
-        &mut self,
-        interface_id: TypeId,
-        implementation_id: TypeId,
-    ) {}
     // Iterate Registrations
     // Create graph
     // Add nodes to graph
     // Draw edges between node via 
     // Validate graph
     // return graph
-    pub fn resolve(&mut self) -> Result<bool,Box<dyn Error>> {
+    pub fn resolve(&mut self) -> Result<(),Box<dyn Error>> {
         for registration in inventory::iter::<Registration> {
             let interface_id: TypeId = registration.interface_id;
             let implementation_id: TypeId = registration.implementation_id;
             let interface_name: String = (registration.implementation_name)();
             let implementation_name: String = (registration.implementation_name)();
-            let dependent_types: Vec<(TypeId,String)> = (registration.dependent_types)();
+            let dependent_types: Vec<RegisteredType> = (registration.dependent_types)();
 
             let interface_node_index: &NodeIndex = self.type_to_node_index
                 .get(&interface_id)
@@ -75,7 +72,8 @@ impl DependencyResolver {
 
             // For each dependent type: add edge between parent (implementation_id) and (dependent_type)
             for dependent_type in dependent_types {
-                let (dependent_type_id,dependent_type_name) = dependent_type;
+                let dependent_type_id: TypeId = dependent_type.id;
+                let dependent_type_name: String = dependent_type.name;
                 let dependent_type_node_index: &NodeIndex = self.type_to_node_index
                     .get(&dependent_type_id)
                     .ok_or_else(|| format!("Expected to find {} in DAG",dependent_type_name))?;
@@ -87,7 +85,7 @@ impl DependencyResolver {
                     )?;
             } 
         }
-        Ok(true)
+        Ok(())
     }
 }
 
