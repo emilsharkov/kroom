@@ -18,6 +18,7 @@ pub struct Container {
 impl Container {
     pub fn new() -> Result<Self, Box<dyn Error>> {
         ContainerValidator::new().resolve()?;
+        // initialize singletons via reverse topological sort of DAG
         let container: Container = Self {
             type_to_registrations: HashMap::new(),
             type_to_singletons: HashMap::new()

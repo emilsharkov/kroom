@@ -9,9 +9,10 @@ pub struct RegisteredType {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Registration {
     pub interface_id: TypeId,
+    pub interface_name: fn() -> String,
     pub implementation_id: TypeId,
     pub implementation_name: fn() -> String,
     pub constructor: Constructor,
@@ -27,6 +28,7 @@ impl Registration {
     {
         Self {
             interface_id: TypeId::of::<Interface>(),
+            interface_name: Implementation::__kroom_interface_name,
             implementation_id: TypeId::of::<Implementation>(),
             implementation_name: Implementation::__kroom_implementation_name,
             constructor: |container| {

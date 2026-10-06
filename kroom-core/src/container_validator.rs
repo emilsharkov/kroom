@@ -19,36 +19,45 @@ impl ContainerValidator {
         }
     }
 
-    pub fn register<Interface, Implementation>(&mut self)
-    where 
-        Interface: ?Sized + 'static,
-        Implementation: Injectable<Interface> + 'static,
-    {
-        let interface_id = TypeId::of::<Interface>();
-        let implementation_id = TypeId::of::<Implementation>();
-
-        self
-            .type_to_node_index
-            .entry(interface_id)
-            .or_insert_with(|| self.dag.add_node(interface_id));
-        
-        self
-            .type_to_node_index
-            .entry(implementation_id)
-            .or_insert_with(|| self.dag.add_node(implementation_id));
-    }
-
-    // Iterate Registrations
-    // Create graph
-    // Add nodes to graph
-    // Draw edges between node via 
-    // Validate graph
-    // return graph
-    pub fn resolve(&mut self) -> Result<(),Box<dyn Error>> {
+    pub fn initialize_nodes(&mut self) -> Result<(),Box<dyn Error>> {
         for registration in inventory::iter::<Registration> {
             let interface_id: TypeId = registration.interface_id;
             let implementation_id: TypeId = registration.implementation_id;
-            let interface_name: String = (registration.implementation_name)();
+            let interface_name: String = (registration.interface_name)();
+            let implementation_name: String = (registration.implementation_name)();
+            
+            self
+                .type_to_node_index
+                .entry(interface_id)
+                .or_insert_with(|| self.dag.add_node(interface_id));
+
+            let interface_node_index: &NodeIndex = self.type_to_node_index
+                .get(&interface_id)
+                .ok_or_else(|| format!("Expected to find {} in DAG",interface_name))?;
+
+            self.node_to_registration.insert(*interface_node_index,*registration);
+            
+            if interface_id != implementation_id {
+                self
+                    .type_to_node_index
+                    .entry(implementation_id)
+                    .or_insert_with(|| self.dag.add_node(implementation_id));   
+
+                let implementation_node_index: &NodeIndex = self.type_to_node_index
+                    .get(&implementation_id)
+                    .ok_or_else(|| format!("Expected to find {} in DAG",implementation_name))?;
+
+                self.node_to_registration.insert(*implementation_node_index,*registration);
+            }
+        }
+        Ok(())
+    }
+
+    fn initialize_edges(&mut self) -> Result<(),Box<dyn Error>> {
+        for registration in inventory::iter::<Registration> {
+            let interface_id: TypeId = registration.interface_id;
+            let implementation_id: TypeId = registration.implementation_id;
+            let interface_name: String = (registration.interface_name)();
             let implementation_name: String = (registration.implementation_name)();
             let dependent_types: Vec<RegisteredType> = (registration.dependent_types)();
 
@@ -85,6 +94,12 @@ impl ContainerValidator {
                     )?;
             } 
         }
+        Ok(())
+    }
+
+    pub fn validate(&mut self) -> Result<(),Box<dyn Error>> {
+        self.initialize_nodes()?;
+        self.initialize_edges()?;
         Ok(())
     }
 }
