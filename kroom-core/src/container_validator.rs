@@ -1,4 +1,4 @@
-use std::{any::TypeId, collections::HashMap, error::Error};
+use std::{any::TypeId, collections::{HashMap, HashSet, VecDeque}, error::Error};
 
 use daggy::{Dag, NodeIndex};
 
@@ -19,7 +19,13 @@ impl ContainerValidator {
         }
     }
 
-    pub fn initialize_nodes(&mut self) -> Result<(),Box<dyn Error>> {
+    pub fn validate(&mut self) -> Result<(),Box<dyn Error>> {
+        self.initialize_nodes()?;
+        self.initialize_edges()?;
+        Ok(())
+    }
+
+    fn initialize_nodes(&mut self) -> Result<(),Box<dyn Error>> {
         for registration in inventory::iter::<Registration> {
             let interface_id: TypeId = registration.interface_id;
             let implementation_id: TypeId = registration.implementation_id;
@@ -104,13 +110,12 @@ impl ContainerValidator {
      Example: "older -> newer -> ... -> older "
     */
     fn get_circular_dependency_chain(&self, older: NodeIndex, newer: NodeIndex) -> String {
-        return "".to_string();
-    }
+        let mut parent_to_child_nodes: HashMap<NodeIndex,Option<NodeIndex>> = HashMap::new();
+        let mut node_queue: VecDeque<NodeIndex> = VecDeque::new();
 
-    pub fn validate(&mut self) -> Result<(),Box<dyn Error>> {
-        self.initialize_nodes()?;
-        self.initialize_edges()?;
-        Ok(())
+        node_queue.in
+
+        return "".to_string();
     }
 }
 
