@@ -1,6 +1,6 @@
 use std::{any::TypeId, collections::{HashMap, HashSet, VecDeque}, error::Error};
 
-use daggy::{Dag, NodeIndex};
+use daggy::{Dag, NodeIndex, Walker};
 
 use crate::{injectable::Injectable, registration::{RegisteredType, Registration}};
 
@@ -110,12 +110,46 @@ impl ContainerValidator {
      Example: "older -> newer -> ... -> older "
     */
     fn get_circular_dependency_chain(&self, older: NodeIndex, newer: NodeIndex) -> String {
-        let mut parent_to_child_nodes: HashMap<NodeIndex,Option<NodeIndex>> = HashMap::new();
+        let mut dependency_chain: VecDeque<NodeIndex> = VecDeque::new();
+        let mut child_to_parent_nodes: HashMap<NodeIndex,Option<NodeIndex>> = HashMap::new();
         let mut node_queue: VecDeque<NodeIndex> = VecDeque::new();
 
-        node_queue.in
+        // Start a BFS at the newer node to find the path to the child
+        node_queue.push_back(newer);
+        child_to_parent_nodes.insert(newer, None);
+        while let Some(head_node) = node_queue.pop_front() {
+            if head_node == older {
+                while let Some(parent) = child_to_parent_nodes.get(&head_node).expect("Each child node to have an entry") {
+                    dependency_chain.push_front(*parent);
+                }
+            }
 
-        return "".to_string();
+            for (_, child_node) in self.dag.children(head_node).iter(&self.dag) {
+                node_queue.push_back(child_node);
+                child_to_parent_nodes.insert(child_node, Some(head_node));
+            }
+        }
+
+        if dependency_chain.len() < 2 {
+            panic!("Expected dependency chain to be populated")
+        }
+
+        // Now older is at front and back of chain to show circular dependency
+        dependency_chain.push_front(older);
+
+        let chain: String = dependency_chain
+            .iter()
+            .map(|node: &NodeIndex| -> String {
+                let registration: &Registration = self.node_to_registration
+                    .get(node)
+                    .expect("Each node should have a registration");
+                let node_name: String =  (registration.implementation_name)();
+                return node_name;
+            })
+            .collect::<Vec<String>>()
+            .join(" -> ");
+
+        return chain;
     }
 }
 
