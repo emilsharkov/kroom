@@ -97,6 +97,16 @@ impl ContainerValidator {
         Ok(())
     }
 
+    /* 
+     If making an edge from older to newer causes a circular dependency, 
+     then there exists an edge from newer to older.
+     This function returns a string representation of the chain.
+     Example: "older -> newer -> ... -> older "
+    */
+    fn get_circular_dependency_chain(&self, older: NodeIndex, newer: NodeIndex) -> String {
+        return "".to_string();
+    }
+
     pub fn validate(&mut self) -> Result<(),Box<dyn Error>> {
         self.initialize_nodes()?;
         self.initialize_edges()?;
