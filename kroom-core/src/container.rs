@@ -14,14 +14,14 @@ pub struct Container {
 }
 
 impl Container {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             type_to_registrations: HashMap::new(),
             type_to_singletons: HashMap::new()
         }
     }
 
-    pub fn register_singleton(&mut self, registration: &Registration) {
+    pub(crate) fn register_singleton(&mut self, registration: &Registration) {
         let singleton_key = SingletonKey::from_registration(registration);
         let constructor: Constructor = registration.constructor;
         let boxed_generic_injectable: Box<dyn Any> = constructor(self);
