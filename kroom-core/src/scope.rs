@@ -7,12 +7,12 @@ pub enum Scope {
 }
 impl FromStr for Scope {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_ref() {
             "singleton" => Ok(Scope::Singleton),
             "transient" => Ok(Scope::Transient),
-            _ => Err(format!("{} is not a valid Scope",s)),
+            _ => Err(format!("{} is not a valid Scope", s)),
         }
     }
 }

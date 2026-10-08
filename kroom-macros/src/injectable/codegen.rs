@@ -1,11 +1,11 @@
-use syn::Type;
 use quote::quote;
+use syn::Type;
 
 pub fn generate_injectable(
     target_type: &Type,
     struct_type: &Type,
     injected_fields: &Vec<proc_macro2::TokenStream>,
-    multi_injected_fields: &Vec<proc_macro2::TokenStream>
+    multi_injected_fields: &Vec<proc_macro2::TokenStream>,
 ) -> proc_macro2::TokenStream {
     quote!(
         impl ::kroom_core::injectable::Injectable<#target_type> for #struct_type {
@@ -32,7 +32,7 @@ pub fn generate_injectable(
             fn __kroom_interface_name() -> String {
                 ::std::any::type_name::<#target_type>().to_string()
             }
-            
+
             fn __kroom_implementation_name() -> String {
                 ::std::any::type_name::<#struct_type>().to_string()
             }

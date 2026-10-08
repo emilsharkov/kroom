@@ -1,6 +1,9 @@
-use std::{any::{TypeId, type_name}, sync::Arc};
-use kroom_core::{container::Container, injectable::Injectable, registration::RegisteredType};
 use crate::common::{user::User, user_repo::UserRepo};
+use kroom_core::{container::Container, injectable::Injectable, registration::RegisteredType};
+use std::{
+    any::{TypeId, type_name},
+    sync::Arc,
+};
 
 pub trait UserService {
     fn get_user(&self, id: &str) -> User;
@@ -27,12 +30,10 @@ impl Injectable<dyn UserService> for DefaultUserService {
     }
 
     fn __kroom_dependent_types() -> Vec<kroom_core::registration::RegisteredType> {
-        vec![
-            RegisteredType {
-                id: TypeId::of::<dyn UserRepo>(),
-                name: type_name::<dyn UserRepo>().to_string()
-            }
-        ]
+        vec![RegisteredType {
+            id: TypeId::of::<dyn UserRepo>(),
+            name: type_name::<dyn UserRepo>().to_string(),
+        }]
     }
 
     fn __kroom_interface_name() -> String {
@@ -55,12 +56,10 @@ impl Injectable<DefaultUserService> for DefaultUserService {
     }
 
     fn __kroom_dependent_types() -> Vec<kroom_core::registration::RegisteredType> {
-        vec![
-            RegisteredType {
-                id: TypeId::of::<dyn UserRepo>(),
-                name: type_name::<dyn UserRepo>().to_string()
-            }
-        ]
+        vec![RegisteredType {
+            id: TypeId::of::<dyn UserRepo>(),
+            name: type_name::<dyn UserRepo>().to_string(),
+        }]
     }
 
     fn __kroom_interface_name() -> String {

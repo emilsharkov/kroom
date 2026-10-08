@@ -1,5 +1,5 @@
-use syn::{GenericArgument, ItemStruct, PathArguments, Type, parse_quote};
 use quote::quote;
+use syn::{GenericArgument, ItemStruct, PathArguments, Type, parse_quote};
 
 pub fn wrap_injected_field_with_arc(item_struct: &mut ItemStruct) {
     for field in item_struct.fields.iter_mut() {
@@ -45,12 +45,12 @@ pub fn extract_inner_type_from_vector(injected_type: &Type) -> Option<&Type> {
     };
     argument.args.iter().find_map(|arg| match arg {
         GenericArgument::Type(inner_type) => Some(inner_type),
-        _ => None
+        _ => None,
     })
 }
 
 pub fn get_injected_fields_for_constructor(
-    item_struct: &ItemStruct
+    item_struct: &ItemStruct,
 ) -> Vec<proc_macro2::TokenStream> {
     let mut injected_fields: Vec<proc_macro2::TokenStream> = Vec::new();
     for field in item_struct.fields.iter() {
@@ -69,7 +69,7 @@ pub fn get_injected_fields_for_constructor(
 }
 
 pub fn get_multi_injected_fields_for_constructor(
-    item_struct: &ItemStruct
+    item_struct: &ItemStruct,
 ) -> Vec<proc_macro2::TokenStream> {
     let mut injected_fields: Vec<proc_macro2::TokenStream> = Vec::new();
     for field in item_struct.fields.iter() {
@@ -88,7 +88,10 @@ pub fn get_multi_injected_fields_for_constructor(
     return injected_fields;
 }
 
-pub fn strip_attribute_from_struct_fields(attribute_name: &'static str, item_struct: &mut ItemStruct) {
+pub fn strip_attribute_from_struct_fields(
+    attribute_name: &'static str,
+    item_struct: &mut ItemStruct,
+) {
     for field in item_struct.fields.iter_mut() {
         field.attrs.retain(|attribute| {
             return !attribute.path().is_ident(attribute_name);

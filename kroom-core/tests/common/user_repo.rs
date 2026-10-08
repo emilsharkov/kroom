@@ -1,6 +1,6 @@
-use std::sync::Arc;
-use kroom_core::{container::Container, injectable::Injectable, registration::Registration};
 use crate::common::user::User;
+use kroom_core::{container::Container, injectable::Injectable, registration::Registration};
+use std::sync::Arc;
 
 pub trait UserRepo {
     fn find_one(&self, user_id: &str) -> User;
@@ -32,7 +32,7 @@ impl Injectable<dyn UserRepo> for UserMockRepo {
     fn __kroom_interface_name() -> String {
         std::any::type_name::<dyn UserRepo>().to_string()
     }
-    
+
     fn __kroom_implementation_name() -> String {
         std::any::type_name::<UserMockRepo>().to_string()
     }

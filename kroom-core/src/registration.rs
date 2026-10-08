@@ -1,4 +1,4 @@
-use std::any::{TypeId};
+use std::any::TypeId;
 
 use crate::container::Constructor;
 use crate::injectable::Injectable;
@@ -9,7 +9,7 @@ pub struct RegisteredType {
     pub name: String,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Registration {
     pub interface_id: TypeId,
     pub interface_name: fn() -> String,

@@ -1,9 +1,9 @@
 pub mod container;
 pub mod container_builder;
+mod container_validator;
 pub mod dependency_graph;
 pub mod injectable;
-pub mod scope;
 pub mod registration;
-mod container_validator;
+pub mod scope;
 mod singleton_key;
 pub use inventory;
