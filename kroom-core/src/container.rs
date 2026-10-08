@@ -21,7 +21,21 @@ impl Container {
         }
     }
 
-    pub(crate) fn register_singleton(&mut self, registration: &Registration) {
+    pub(crate) fn register_injectable(&mut self, registration: &Registration) {
+        let interface_id: TypeId = registration.interface_id;
+        let scope: Scope = (registration.scope)();
+
+        self.type_to_registrations
+            .entry(interface_id)
+            .or_insert_with(Vec::new)
+            .push(*registration);
+
+        if scope == Scope::Singleton {
+            self.register_singleton(registration);
+        }
+    }
+
+    fn register_singleton(&mut self, registration: &Registration) {
         let singleton_key = SingletonKey::from_registration(registration);
         let constructor: Constructor = registration.constructor;
         let boxed_generic_injectable: Box<dyn Any> = constructor(self);

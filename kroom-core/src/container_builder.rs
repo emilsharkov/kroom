@@ -2,10 +2,7 @@ use std::error::Error;
 
 use daggy::NodeIndex;
 
-use crate::{
-    container::Container, dependency_graph::DependencyGraph, registration::Registration,
-    scope::Scope,
-};
+use crate::{container::Container, dependency_graph::DependencyGraph, registration::Registration};
 
 pub struct ContainerBuilder;
 
@@ -20,10 +17,8 @@ impl ContainerBuilder {
             let registration: &Registration = dependency_graph
                 .get_registration(node)
                 .expect("Node to have a registration");
-            let scope: Scope = (registration.scope)();
-            if scope == Scope::Singleton {
-                container.register_singleton(registration);
-            }
+
+            container.register_injectable(registration);
         }
 
         Ok(container)
