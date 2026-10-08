@@ -9,10 +9,6 @@ pub struct SingletonKey {
 }
 
 impl SingletonKey {
-    pub fn new(interface_id: TypeId, implementation_id: TypeId) -> Self {
-        Self { interface_id, implementation_id }
-    }
-
     pub fn from_registration(registration: &Registration) -> Self {
         Self {
             interface_id: registration.interface_id,

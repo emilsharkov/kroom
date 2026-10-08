@@ -103,7 +103,7 @@ impl DependencyGraph {
                             *implementation_node_index, 
                             *dependent_type_node_index
                         )
-                    });
+                    })?;
             } 
         }
         Ok(())

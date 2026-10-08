@@ -1,8 +1,6 @@
-use std::{any::TypeId, collections::{HashMap, HashSet, VecDeque}, error::Error};
+use std::error::Error;
 
-use daggy::{Dag, NodeIndex, Walker};
-
-use crate::{dependency_graph::DependencyGraph, injectable::Injectable, registration::{RegisteredType, Registration}};
+use crate::dependency_graph::DependencyGraph;
 
 pub struct ContainerValidator { }
 
@@ -12,7 +10,6 @@ impl ContainerValidator {
     }
 
     pub fn validate(&mut self, dependency_graph: &DependencyGraph) -> Result<(),Box<dyn Error>> {
-        // dependency_graph.
         Ok(())
     }
     

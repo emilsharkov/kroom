@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use kroom_macros::injectable;
-use kroom_core::container::Container;
+use kroom_core::{container::Container, container_builder::ContainerBuilder};
 
 #[injectable]
 struct Water;
@@ -50,7 +50,7 @@ struct Concrete {
 }
 
 fn main() -> Result<(),Box<dyn Error>> {
-    let mut container = Container::new()?;
+    let container: Container = ContainerBuilder::build()?;
     let dyn_trait_struct = container.get::<dyn Trait>();
     let concrete_struct = container.get::<Concrete>();
     let dyn_solid_structs = container.get_all::<dyn Granular>();
