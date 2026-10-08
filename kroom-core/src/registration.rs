@@ -1,15 +1,17 @@
 use std::any::TypeId;
+use std::fmt;
 
 use crate::container::Constructor;
 use crate::injectable::Injectable;
 use crate::scope::Scope;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegisteredType {
     pub id: TypeId,
     pub name: String,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Registration {
     pub interface_id: TypeId,
     pub interface_name: fn() -> String,
@@ -18,6 +20,20 @@ pub struct Registration {
     pub constructor: Constructor,
     pub scope: fn() -> Scope,
     pub dependent_types: fn() -> Vec<RegisteredType>,
+}
+
+impl fmt::Debug for Registration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Registration")
+            .field("interface_id", &self.interface_id)
+            .field("interface_name", &(self.interface_name)())
+            .field("implementation_id", &self.implementation_id)
+            .field("implementation_name", &(self.implementation_name)())
+            .field("constructor", &self.constructor)
+            .field("scope", &(self.scope)())
+            .field("dependent_types", &(self.dependent_types)())
+            .finish()
+    }
 }
 
 impl Registration {

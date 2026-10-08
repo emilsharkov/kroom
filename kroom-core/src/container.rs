@@ -21,12 +21,11 @@ impl Container {
         }
     }
 
-    pub(crate) fn register_injectable(&mut self, registration: &Registration) {
-        let interface_id: TypeId = registration.interface_id;
+    pub(crate) fn register_injectable(&mut self, implementation_id: &TypeId, registration: &Registration) {
         let scope: Scope = (registration.scope)();
 
         self.type_to_registrations
-            .entry(interface_id)
+            .entry(*implementation_id)
             .or_insert_with(Vec::new)
             .push(*registration);
 

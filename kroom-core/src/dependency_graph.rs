@@ -175,8 +175,10 @@ impl DependencyGraph {
         Ok(topological_sort)
     }
 
-    pub fn get_registration(&self, node: &NodeIndex) -> Option<&Registration> {
-        self.node_to_registration.get(node)
+    pub fn get_registration_by_node(&self, node: &NodeIndex) -> Option<(&TypeId,&Registration)> {
+        let type_id: &TypeId = self.dag.node_weight(*node)?;
+        let registration: &Registration = self.node_to_registration.get(node)?;
+        Some((type_id,registration))
     }
 }
 

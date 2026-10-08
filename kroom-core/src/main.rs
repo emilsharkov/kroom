@@ -5,6 +5,8 @@ use common::user_repo::UserRepo;
 use kroom_core::{container::Container, container_builder::ContainerBuilder};
 use std::{error::Error, sync::Arc};
 
+use crate::common::user_repo::UserMockRepo;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let multi_container: Container = ContainerBuilder::build()?;
 
@@ -13,6 +15,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let user = repo.find_one("");
         println!("{:?}", user);
     }
+
+    let user_repo: Arc<dyn UserRepo> = multi_container.get::<UserMockRepo>();
+    let user = user_repo.find_one("");
+    println!("{:?}", user);
 
     Ok(())
 }

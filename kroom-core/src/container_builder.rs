@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{any::TypeId, error::Error};
 
 use daggy::NodeIndex;
 
@@ -14,11 +14,12 @@ impl ContainerBuilder {
         let dependency_graph: DependencyGraph = DependencyGraph::build()?;
         let topological_sort: Vec<NodeIndex> = dependency_graph.get_topological_sort()?;
         for node in topological_sort.iter().rev() {
-            let registration: &Registration = dependency_graph
-                .get_registration(node)
+            let (implementation_id, registration): (&TypeId, &Registration) = dependency_graph
+                .get_registration_by_node(node)
                 .expect("Node to have a registration");
-
-            container.register_injectable(registration);
+            container.register_injectable(implementation_id, registration);
+            println!("{:#?}",implementation_id);
+            println!("{:#?}",registration);
         }
 
         Ok(container)
