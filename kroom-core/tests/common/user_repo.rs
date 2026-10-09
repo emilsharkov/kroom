@@ -69,7 +69,6 @@ inventory::submit! {
 }
 
 pub struct UserPgRepo;
-
 impl UserRepo for UserPgRepo {
     fn find_one(&self, _user_id: &str) -> User {
         User {

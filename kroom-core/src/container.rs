@@ -4,42 +4,35 @@ use std::sync::Arc;
 
 use crate::registration::Registration;
 use crate::scope::Scope;
-use crate::singleton_key::SingletonKey;
 
 pub type Constructor = fn(&Container) -> Box<dyn Any>;
 
 pub struct Container {
     type_to_registrations: HashMap<TypeId, Vec<Registration>>,
-    type_to_singletons: HashMap<SingletonKey, Box<dyn Any>>,
+    type_to_singleton: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl Container {
     pub(crate) fn new() -> Self {
         Self {
             type_to_registrations: HashMap::new(),
-            type_to_singletons: HashMap::new(),
+            type_to_singleton: HashMap::new(),
         }
     }
 
     pub(crate) fn register_injectable(&mut self, implementation_id: &TypeId, registration: &Registration) {
-        let scope: Scope = (registration.scope)();
-
         self.type_to_registrations
             .entry(*implementation_id)
             .or_insert_with(Vec::new)
             .push(*registration);
-
-        if scope == Scope::Singleton {
-            self.register_singleton(registration);
-        }
     }
 
-    fn register_singleton(&mut self, registration: &Registration) {
-        let singleton_key = SingletonKey::from_registration(registration);
+    pub(crate) fn register_singleton(&mut self, registration: &Registration) {
+        let interface_id: TypeId = registration.interface_id;
         let constructor: Constructor = registration.constructor;
         let boxed_generic_injectable: Box<dyn Any> = constructor(self);
-        self.type_to_singletons
-            .insert(singleton_key, boxed_generic_injectable);
+        self.type_to_singleton
+            .insert(interface_id, boxed_generic_injectable);
     }
 
     fn get_transient<Interface: ?Sized + 'static>(
@@ -73,10 +66,10 @@ impl Container {
         &self,
         registration: &Registration,
     ) -> Arc<Interface> {
-        let singleton_key = SingletonKey::from_registration(registration);
+        let interface_id: TypeId = registration.interface_id;
         let boxed_generic_injectable = self
-            .type_to_singletons
-            .get(&singleton_key)
+            .type_to_singleton
+            .get(&interface_id)
             .expect("Singleton to be registered");
         let injectable: Arc<Interface> = self.extract_injectable(boxed_generic_injectable);
         return injectable;

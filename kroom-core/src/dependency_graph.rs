@@ -6,12 +6,12 @@ use std::{
 
 use daggy::{Dag, NodeIndex, Walker, petgraph::algo::toposort};
 
-use crate::registration::{RegisteredType, Registration};
+use crate::registration::{self, RegisteredType, Registration};
 
 pub struct DependencyGraph {
     dag: Dag<TypeId, ()>,
     type_to_node_index: HashMap<TypeId, NodeIndex>,
-    node_to_registration: HashMap<NodeIndex, Registration>,
+    node_to_registrations: HashMap<NodeIndex, Vec<Registration>>,
 }
 
 impl DependencyGraph {
@@ -26,7 +26,7 @@ impl DependencyGraph {
         DependencyGraph {
             dag: Dag::new(),
             type_to_node_index: HashMap::new(),
-            node_to_registration: HashMap::new(),
+            node_to_registrations: HashMap::new(),
         }
     }
 
@@ -37,30 +37,52 @@ impl DependencyGraph {
             let interface_name: String = (registration.interface_name)();
             let implementation_name: String = (registration.implementation_name)();
 
-            self.type_to_node_index
-                .entry(interface_id)
-                .or_insert_with(|| self.dag.add_node(interface_id));
+            if self.type_to_node_index.get(&interface_id).is_none() {
+                self.type_to_node_index
+                    .entry(interface_id)
+                    .or_insert_with(|| self.dag.add_node(interface_id));
 
-            let interface_node_index: &NodeIndex = self
-                .type_to_node_index
-                .get(&interface_id)
-                .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
+                let node_index: &NodeIndex = self
+                    .type_to_node_index
+                    .get(&interface_id)
+                    .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
 
-            self.node_to_registration
-                .insert(*interface_node_index, *registration);
+                self.node_to_registrations
+                    .entry(*node_index)
+                    .or_insert_with(Vec::new)
+                    .push(*registration);
+            }
 
-            if interface_id != implementation_id {
+            if self.type_to_node_index.get(&implementation_id).is_none() {
                 self.type_to_node_index
                     .entry(implementation_id)
                     .or_insert_with(|| self.dag.add_node(implementation_id));
 
-                let implementation_node_index: &NodeIndex = self
+                let node_index: &NodeIndex = self
                     .type_to_node_index
                     .get(&implementation_id)
                     .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
 
-                self.node_to_registration
-                    .insert(*implementation_node_index, *registration);
+                self.node_to_registrations
+                    .entry(*node_index)
+                    .or_insert_with(Vec::new)
+                    .push(*registration);
+            }
+
+            if interface_id != implementation_id {
+                let interface_node_index = self
+                    .type_to_node_index
+                    .get(&interface_id)
+                    .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
+
+                let implementation_node_index = self
+                    .type_to_node_index
+                    .get(&implementation_id)
+                    .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
+
+                // Add edge between parent (interface_id) and child (implementation_id)
+                self.dag
+                    .add_edge(*interface_node_index, *implementation_node_index, ())?;
             }
         }
         Ok(())
@@ -68,27 +90,14 @@ impl DependencyGraph {
 
     fn initialize_edges(&mut self) -> Result<(), Box<dyn Error>> {
         for registration in inventory::iter::<Registration> {
-            let interface_id: TypeId = registration.interface_id;
             let implementation_id: TypeId = registration.implementation_id;
-            let interface_name: String = (registration.interface_name)();
             let implementation_name: String = (registration.implementation_name)();
             let dependent_types: Vec<RegisteredType> = (registration.dependent_types)();
-
-            let interface_node_index: &NodeIndex = self
-                .type_to_node_index
-                .get(&interface_id)
-                .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
 
             let implementation_node_index: &NodeIndex = self
                 .type_to_node_index
                 .get(&implementation_id)
                 .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
-
-            if implementation_node_index != interface_node_index {
-                // Add edge between parent (interface_id) and child (implementation_id)
-                self.dag
-                    .add_edge(*interface_node_index, *implementation_node_index, ())?;
-            }
 
             // For each dependent type: add edge between parent (implementation_id) and (dependent_type)
             for dependent_type in dependent_types {
@@ -155,10 +164,11 @@ impl DependencyGraph {
         let chain: String = dependency_chain
             .iter()
             .map(|node: &NodeIndex| -> String {
-                let registration: &Registration = self
-                    .node_to_registration
+                let registrations: &Vec<Registration> = self
+                    .node_to_registrations
                     .get(node)
                     .expect("Each node should have a registration");
+                let registration: &Registration = registrations.first().expect("Each node to have at least one registration");
                 let node_name: String = (registration.implementation_name)();
                 return node_name;
             })
@@ -175,10 +185,9 @@ impl DependencyGraph {
         Ok(topological_sort)
     }
 
-    pub fn get_registration_by_node(&self, node: &NodeIndex) -> Option<(&TypeId,&Registration)> {
-        let type_id: &TypeId = self.dag.node_weight(*node)?;
-        let registration: &Registration = self.node_to_registration.get(node)?;
-        Some((type_id,registration))
+    pub fn get_registrations_by_node(&self, node: &NodeIndex) -> Option<&Vec<Registration>> {
+        let registrations: &Vec<Registration> = self.node_to_registrations.get(node)?;
+        Some(registrations)
     }
 }
 
