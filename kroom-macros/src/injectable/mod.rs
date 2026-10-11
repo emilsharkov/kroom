@@ -17,7 +17,7 @@ mod codegen;
 mod fields;
 
 pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args: MacroArgs = parse_macro_args(attr).unwrap_or(MacroArgs::new());
+    let args: MacroArgs = parse_macro_args(attr).unwrap();
     let mut item_struct = parse_macro_input!(item as ItemStruct);
     let struct_ident = &item_struct.ident;
 

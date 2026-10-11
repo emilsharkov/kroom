@@ -23,10 +23,18 @@ pub fn parse_macro_args(attr: TokenStream) -> Result<MacroArgs, syn::Error> {
     let parser = meta::parser(|metadata| {
         if metadata.path.is_ident("scope") {
             let metadata_value = metadata.value()?;
-            let string_value: String = metadata_value.parse::<LitStr>()?.value();
-            Scope::from_str(&string_value).map_err(|err| metadata.error(err))?;
-            let scope_type: Type = metadata_value.parse::<Type>()?;
-            args.scope = scope_type;
+            if metadata_value.peek(LitStr) {
+                let string_value: String = metadata_value.parse::<LitStr>()?.value();
+                let scope = Scope::from_str(&string_value).map_err(|err| metadata.error(err))?;
+                let scope_type: Type = match scope {
+                    Scope::Singleton => syn::parse_quote!(::kroom_core::scope::Scope::Singleton),
+                    Scope::Transient => syn::parse_quote!(::kroom_core::scope::Scope::Transient),
+                };
+                args.scope = scope_type;
+            } else {
+                let scope_type: Type = metadata_value.parse::<Type>()?;
+                args.scope = scope_type;
+            }
             Ok(())
         } else if metadata.path.is_ident("type") {
             let target_type: Type = metadata.value()?.parse::<Type>()?;

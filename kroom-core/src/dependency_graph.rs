@@ -6,7 +6,7 @@ use std::{
 
 use daggy::{Dag, NodeIndex, Walker, petgraph::algo::toposort};
 
-use crate::registration::{self, RegisteredType, Registration};
+use crate::registration::{RegisteredType, Registration};
 
 pub struct DependencyGraph {
     dag: Dag<TypeId, ()>,
@@ -20,6 +20,22 @@ impl DependencyGraph {
         dependency_graph.initialize_nodes()?;
         dependency_graph.initialize_edges()?;
         Ok(dependency_graph)
+    }
+
+    pub fn get_topological_sort(&self) -> Result<Vec<NodeIndex>, Box<dyn Error>> {
+        let graph = self.dag.graph();
+        let topological_sort: Vec<NodeIndex> =
+            toposort(graph, None).expect("No cycles to be present in DAG");
+        Ok(topological_sort)
+    }
+
+    pub fn get_registrations_by_node(&self, node: &NodeIndex) -> Option<&Vec<Registration>> {
+        let registrations: &Vec<Registration> = self.node_to_registrations.get(node)?;
+        Some(registrations)
+    }
+
+    pub fn get_dag(&self) -> &Dag<TypeId,()> {
+        &self.dag
     }
 
     fn new() -> Self {
@@ -172,18 +188,6 @@ impl DependencyGraph {
             .join(" -> ");
 
         return chain;
-    }
-
-    pub fn get_topological_sort(&self) -> Result<Vec<NodeIndex>, Box<dyn Error>> {
-        let graph = self.dag.graph();
-        let topological_sort: Vec<NodeIndex> =
-            toposort(graph, None).expect("No cycles to be present in DAG");
-        Ok(topological_sort)
-    }
-
-    pub fn get_registrations_by_node(&self, node: &NodeIndex) -> Option<&Vec<Registration>> {
-        let registrations: &Vec<Registration> = self.node_to_registrations.get(node)?;
-        Some(registrations)
     }
 }
 

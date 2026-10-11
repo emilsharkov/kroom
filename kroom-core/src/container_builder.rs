@@ -2,7 +2,7 @@ use std::{any::TypeId, error::Error};
 
 use daggy::NodeIndex;
 
-use crate::{container::Container, dependency_graph::DependencyGraph, registration::Registration, scope::Scope};
+use crate::{container::Container, container_validator::ContainerValidator, dependency_graph::DependencyGraph, registration::Registration, scope::Scope};
 
 pub struct ContainerBuilder;
 
@@ -14,8 +14,11 @@ impl ContainerBuilder {
             container.register_injectable(&interface_id, registration);
         }
         
-        // Eagerly initializesingletons via reverse topological sort of dependency graph DAG
         let dependency_graph: DependencyGraph = DependencyGraph::build()?;
+        let container_validator: ContainerValidator = ContainerValidator::new();
+        container_validator.validate_dependency_graph(&dependency_graph)?;
+
+        // Eagerly initializesingletons via reverse topological sort of dependency graph DAG
         let topological_sort: Vec<NodeIndex> = dependency_graph.get_topological_sort()?;
         for node in topological_sort.iter().rev() {
             let registrations: &Vec<Registration> = dependency_graph
