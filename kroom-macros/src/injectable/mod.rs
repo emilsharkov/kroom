@@ -1,4 +1,3 @@
-use kroom_core::scope::Scope;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{ItemStruct, Type, parse_macro_input, parse_quote};
@@ -18,7 +17,7 @@ mod codegen;
 mod fields;
 
 pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args: MacroArgs = parse_macro_args(attr).unwrap_or(MacroArgs::default());
+    let args: MacroArgs = parse_macro_args(attr).unwrap_or(MacroArgs::new());
     let mut item_struct = parse_macro_input!(item as ItemStruct);
     let struct_ident = &item_struct.ident;
 
@@ -26,7 +25,7 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
     let target_type: Type = args
         .target_type
         .unwrap_or_else(|| parse_quote!(#struct_ident));
-    let _scope = args.scope.unwrap_or(Scope::Singleton);
+    let scope = args.scope;
 
     let injected_fields = get_injected_fields_for_constructor(&item_struct);
     let multi_injected_fields = get_multi_injected_fields_for_constructor(&item_struct);
@@ -37,6 +36,7 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
         &injected_fields,
         &multi_injected_fields,
         &dependent_types,
+        &scope,
     );
     let struct_type_injectable = match target_type != struct_type {
         true => Some(generate_injectable(
@@ -45,6 +45,7 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
             &injected_fields,
             &multi_injected_fields,
             &dependent_types,
+            &scope,
         )),
         false => None,
     };

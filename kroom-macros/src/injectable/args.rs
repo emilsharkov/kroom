@@ -2,23 +2,34 @@ use kroom_core::scope::Scope;
 use proc_macro::TokenStream;
 use std::str::FromStr;
 use syn::{LitStr, Type, meta, parse::Parser};
+use quote::quote;
 
-#[derive(Default)]
 pub struct MacroArgs {
     pub target_type: Option<Type>,
-    pub scope: Option<Scope>,
+    pub scope: Type,
+}
+
+impl MacroArgs {
+    pub(crate) fn new() -> Self {
+        MacroArgs { 
+            target_type: None,
+            scope: syn::parse2(quote!{ Scope::Singleton }).expect("")
+        }
+    }
 }
 
 pub fn parse_macro_args(attr: TokenStream) -> Result<MacroArgs, syn::Error> {
-    let mut args = MacroArgs::default();
+    let mut args = MacroArgs::new();
     let parser = meta::parser(|metadata| {
         if metadata.path.is_ident("scope") {
-            let value: String = metadata.value()?.parse::<LitStr>()?.value();
-            let scope = Scope::from_str(&value).map_err(|err| metadata.error(err))?;
-            args.scope = Some(scope);
+            let metadata_value = metadata.value()?;
+            let string_value: String = metadata_value.parse::<LitStr>()?.value();
+            Scope::from_str(&string_value).map_err(|err| metadata.error(err))?;
+            let scope_type: Type = metadata_value.parse::<Type>()?;
+            args.scope = scope_type;
             Ok(())
         } else if metadata.path.is_ident("type") {
-            let target_type: Type = metadata.value()?.parse()?;
+            let target_type: Type = metadata.value()?.parse::<Type>()?;
             args.target_type = Some(target_type);
             Ok(())
         } else {

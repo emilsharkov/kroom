@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use kroom_core::{container::Container, container_builder::ContainerBuilder};
+use kroom_core::{scope::Scope, container::Container, container_builder::ContainerBuilder};
 use kroom_macros::injectable;
 
 #[injectable]
