@@ -7,9 +7,9 @@ use crate::injectable::{
     args::{MacroArgs, parse_macro_args},
     codegen::generate_injectable,
     fields::{
-        get_injected_fields_for_constructor, get_multi_injected_fields_for_constructor,
-        strip_attribute_from_struct_fields, wrap_injected_field_with_arc,
-        wrap_multi_injected_field_with_arc,
+        get_dependent_types, get_injected_fields_for_constructor,
+        get_multi_injected_fields_for_constructor, strip_attribute_from_struct_fields,
+        wrap_injected_field_with_arc, wrap_multi_injected_field_with_arc,
     },
 };
 
@@ -30,11 +30,13 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let injected_fields = get_injected_fields_for_constructor(&item_struct);
     let multi_injected_fields = get_multi_injected_fields_for_constructor(&item_struct);
+    let dependent_types = get_dependent_types(&item_struct);
     let target_type_injectable = generate_injectable(
         &target_type,
         &struct_type,
         &injected_fields,
         &multi_injected_fields,
+        &dependent_types,
     );
     let struct_type_injectable = match target_type != struct_type {
         true => Some(generate_injectable(
@@ -42,6 +44,7 @@ pub fn injectable(attr: TokenStream, item: TokenStream) -> TokenStream {
             &struct_type,
             &injected_fields,
             &multi_injected_fields,
+            &dependent_types,
         )),
         false => None,
     };

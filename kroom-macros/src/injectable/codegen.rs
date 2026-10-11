@@ -6,6 +6,7 @@ pub fn generate_injectable(
     struct_type: &Type,
     injected_fields: &Vec<proc_macro2::TokenStream>,
     multi_injected_fields: &Vec<proc_macro2::TokenStream>,
+    dependent_types: &[&Type],
 ) -> proc_macro2::TokenStream {
     quote!(
         impl ::kroom_core::injectable::Injectable<#target_type> for #struct_type {
@@ -22,10 +23,12 @@ pub fn generate_injectable(
 
             fn __kroom_dependent_types() -> Vec<::kroom_core::registration::RegisteredType> {
                 vec![
-                    ::kroom_core::registration::RegisteredType {
-                        id: ::std::any::TypeId::of::<#target_type>(),
-                        name: ::std::any::type_name::<#target_type>().to_string()
-                    }
+                    #(
+                        ::kroom_core::registration::RegisteredType {
+                            id: ::std::any::TypeId::of::<#dependent_types>(),
+                            name: ::std::any::type_name::<#dependent_types>().to_string(),
+                        },
+                    )*
                 ]
             }
 

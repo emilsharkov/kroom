@@ -88,6 +88,29 @@ pub fn get_multi_injected_fields_for_constructor(
     return injected_fields;
 }
 
+pub fn get_dependent_types(item_struct: &ItemStruct) -> Vec<&Type> {
+    let mut dependent_types = Vec::new();
+    for field in item_struct.fields.iter() {
+        let is_inject = field
+            .attrs
+            .iter()
+            .any(|attribute| attribute.meta.path().is_ident("inject"));
+        let is_multi_inject = field
+            .attrs
+            .iter()
+            .any(|attribute| attribute.meta.path().is_ident("multi_inject"));
+
+        if is_inject {
+            dependent_types.push(&field.ty);
+        } else if is_multi_inject {
+            if let Some(inner_type) = extract_inner_type_from_vector(&field.ty) {
+                dependent_types.push(inner_type);
+            }
+        }
+    }
+    dependent_types
+}
+
 pub fn strip_attribute_from_struct_fields(
     attribute_name: &'static str,
     item_struct: &mut ItemStruct,
