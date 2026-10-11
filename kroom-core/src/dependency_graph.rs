@@ -41,45 +41,35 @@ impl DependencyGraph {
                 self.type_to_node_index
                     .entry(interface_id)
                     .or_insert_with(|| self.dag.add_node(interface_id));
-
-                let node_index: &NodeIndex = self
-                    .type_to_node_index
-                    .get(&interface_id)
-                    .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
-
-                self.node_to_registrations
-                    .entry(*node_index)
-                    .or_insert_with(Vec::new)
-                    .push(*registration);
             }
-
+            
             if self.type_to_node_index.get(&implementation_id).is_none() {
                 self.type_to_node_index
                     .entry(implementation_id)
                     .or_insert_with(|| self.dag.add_node(implementation_id));
-
-                let node_index: &NodeIndex = self
-                    .type_to_node_index
-                    .get(&implementation_id)
-                    .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
-
-                self.node_to_registrations
-                    .entry(*node_index)
-                    .or_insert_with(Vec::new)
-                    .push(*registration);
             }
 
-            if interface_id != implementation_id {
-                let interface_node_index = self
-                    .type_to_node_index
-                    .get(&interface_id)
-                    .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
+            let interface_node_index: &NodeIndex = self
+                .type_to_node_index
+                .get(&interface_id)
+                .ok_or_else(|| format!("Expected to find {} in DAG", interface_name))?;
 
-                let implementation_node_index = self
-                    .type_to_node_index
-                    .get(&implementation_id)
-                    .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
+            self.node_to_registrations
+                .entry(*interface_node_index)
+                .or_insert_with(Vec::new)
+                .push(*registration);
 
+            let implementation_node_index: &NodeIndex = self
+                .type_to_node_index
+                .get(&implementation_id)
+                .ok_or_else(|| format!("Expected to find {} in DAG", implementation_name))?;
+
+            self.node_to_registrations
+                .entry(*implementation_node_index)
+                .or_insert_with(Vec::new)
+                .push(*registration);
+
+            if interface_node_index != implementation_node_index {
                 // Add edge between parent (interface_id) and child (implementation_id)
                 self.dag
                     .add_edge(*interface_node_index, *implementation_node_index, ())?;

@@ -5,20 +5,24 @@ use common::user_repo::UserRepo;
 use kroom_core::{container::Container, container_builder::ContainerBuilder};
 use std::{error::Error, sync::Arc};
 
-use crate::common::{user, user_repo::UserMockRepo};
+use crate::common::{user::User, user_repo::{UserMockRepo, UserPgRepo}};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let multi_container: Container = ContainerBuilder::build()?;
 
     let user_repos: Vec<Arc<dyn UserRepo>> = multi_container.get_all::<dyn UserRepo>();
     for repo in &user_repos {
-        let user = repo.find_one("");
+        let user: User = repo.find_one("");
         println!("{:?}", user);
     }
 
-    // let user_repo: Arc<dyn UserRepo> = multi_container.get::<UserMockRepo>();
-    // let user = user_repo.find_one("");
-    // println!("{:?}", user);
+    let user_repo: Arc<dyn UserRepo> = multi_container.get::<UserMockRepo>();
+    let user: User = user_repo.find_one("");
+    println!("{:?}", user);
+
+    let user_repo: Arc<dyn UserRepo> = multi_container.get::<UserPgRepo>();
+    let user: User = user_repo.find_one("");
+    println!("{:?}", user);
 
     Ok(())
 }
