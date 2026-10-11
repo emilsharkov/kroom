@@ -127,11 +127,11 @@ impl DependencyGraph {
         visited_child_to_parent_nodes.insert(newer, None);
         while let Some(head_node) = node_queue.pop_front() {
             if head_node == older {
-                while let Some(parent) = visited_child_to_parent_nodes
-                    .get(&head_node)
-                    .expect("Each child node to have an entry")
-                {
-                    dependency_chain.push_front(*parent);
+                dependency_chain.push_front(older);
+                let mut current = older;
+                while let Some(&Some(parent)) = visited_child_to_parent_nodes.get(&current) {
+                    dependency_chain.push_front(parent);
+                    current = parent;
                 }
                 break;
             }
@@ -154,13 +154,19 @@ impl DependencyGraph {
         let chain: String = dependency_chain
             .iter()
             .map(|node: &NodeIndex| -> String {
+                let node_type_id = self.dag[*node];
                 let registrations: &Vec<Registration> = self
                     .node_to_registrations
                     .get(node)
                     .expect("Each node should have a registration");
-                let registration: &Registration = registrations.first().expect("Each node to have at least one registration");
-                let node_name: String = (registration.implementation_name)();
-                return node_name;
+                let registration: &Registration = registrations
+                    .first()
+                    .expect("Each node to have at least one registration");
+                if node_type_id == registration.interface_id {
+                    (registration.interface_name)()
+                } else {
+                    (registration.implementation_name)()
+                }
             })
             .collect::<Vec<String>>()
             .join(" -> ");

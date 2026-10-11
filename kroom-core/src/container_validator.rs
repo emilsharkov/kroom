@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use daggy::NodeIndex;
+
 use crate::dependency_graph::DependencyGraph;
 
 pub struct ContainerValidator {}
@@ -10,6 +12,7 @@ impl ContainerValidator {
     }
 
     pub fn validate(&mut self, dependency_graph: &DependencyGraph) -> Result<(), Box<dyn Error>> {
+        let topological_sort: Vec<NodeIndex> = dependency_graph.get_topological_sort()?;
         Ok(())
     }
 }

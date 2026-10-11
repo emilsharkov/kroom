@@ -2,7 +2,7 @@ use std::{any::TypeId, error::Error};
 
 use daggy::NodeIndex;
 
-use crate::{container::Container, dependency_graph::DependencyGraph, registration::{self, Registration}, scope::Scope};
+use crate::{container::Container, dependency_graph::DependencyGraph, registration::Registration, scope::Scope};
 
 pub struct ContainerBuilder;
 
