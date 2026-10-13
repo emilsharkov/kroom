@@ -5,11 +5,11 @@ use std::sync::Arc;
 use crate::registration::Registration;
 use crate::scope::Scope;
 
-pub type Constructor = fn(&Container) -> Box<dyn Any>;
+pub type Constructor = fn(&Container) -> Box<dyn Send + Sync + Any>;
 
 pub struct Container {
     type_to_registrations: HashMap<TypeId, Vec<Registration>>,
-    interface_to_implementation_singleton: HashMap<TypeId, HashMap<TypeId, Box<dyn Any>>>,
+    interface_to_implementation_singleton: HashMap<TypeId, HashMap<TypeId, Box<dyn Send + Sync + Any>>>,
 }
 
 impl Container {
@@ -31,26 +31,26 @@ impl Container {
         let interface_id: TypeId = registration.interface_id;
         let implementation_id: TypeId = registration.implementation_id;
         let constructor: Constructor = registration.constructor;
-        let boxed_generic_injectable: Box<dyn Any> = constructor(self);
+        let boxed_generic_injectable: Box<dyn Send + Sync + Any> = constructor(self);
         self.interface_to_implementation_singleton
             .entry(interface_id)
             .or_insert_with(HashMap::new)
             .insert(implementation_id, boxed_generic_injectable);
     }
 
-    fn get_transient<Interface: ?Sized + 'static>(
+    fn get_transient<Interface: Send + Sync + ?Sized + 'static>(
         &self,
         registration: &Registration,
     ) -> Arc<Interface> {
         let constructor: Constructor = registration.constructor;
-        let boxed_generic_injectable: Box<dyn Any> = constructor(self);
+        let boxed_generic_injectable: Box<dyn Send + Sync + Any> = constructor(self);
         let injectable: Arc<Interface> = self.extract_injectable(&boxed_generic_injectable);
         injectable
     }
 
-    fn extract_injectable<Interface: ?Sized + 'static>(
+    fn extract_injectable<Interface: Send + Sync + ?Sized + 'static>(
         &self,
-        boxed_generic_injectable: &Box<dyn Any>,
+        boxed_generic_injectable: &Box<dyn Send + Sync + Any>,
     ) -> Arc<Interface> {
         let arc_injectable = boxed_generic_injectable
             .downcast_ref::<Arc<Interface>>()
@@ -65,7 +65,7 @@ impl Container {
         return Arc::clone(arc_injectable);
     }
 
-    fn get_singleton<Interface: ?Sized + 'static>(
+    fn get_singleton<Interface: Send + Sync + ?Sized + 'static>(
         &self,
         registration: &Registration,
     ) -> Arc<Interface> {
@@ -82,7 +82,7 @@ impl Container {
         return injectable;
     }
 
-    fn get_injectable_by_registration<Interface: ?Sized + 'static>(
+    fn get_injectable_by_registration<Interface: Send + Sync + ?Sized + 'static>(
         &self,
         registration: &Registration,
     ) -> Arc<Interface> {
@@ -93,7 +93,7 @@ impl Container {
         }
     }
 
-    pub fn get<Interface: ?Sized + 'static>(&self) -> Arc<Interface> {
+    pub fn get<Interface: Send + Sync + ?Sized + 'static>(&self) -> Arc<Interface> {
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
 
@@ -123,7 +123,7 @@ impl Container {
         injectable
     }
 
-    pub fn get_all<Interface: ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
+    pub fn get_all<Interface: Send + Sync + ?Sized + 'static>(&self) -> Vec<Arc<Interface>> {
         let interface_id: TypeId = TypeId::of::<Interface>();
         let interface_name: &str = type_name::<Interface>();
 

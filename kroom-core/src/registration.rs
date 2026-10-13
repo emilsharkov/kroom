@@ -39,7 +39,7 @@ impl fmt::Debug for Registration {
 impl Registration {
     pub const fn of<Interface, Implementation>() -> Self
     where
-        Interface: ?Sized + 'static,
+        Interface: Send + Sync + ?Sized + 'static,
         Implementation: Injectable<Interface> + 'static,
     {
         Self {

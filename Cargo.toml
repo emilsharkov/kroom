@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "kroom",
-    "kroom-core",
+    "kroom-core", 
+    "kroom-http-core",
     "kroom-macros",
 ]

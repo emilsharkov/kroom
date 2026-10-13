@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-pub trait UserService {
+pub trait UserService: Send + Sync {
     fn get_user(&self, id: &str) -> User;
 }
 

@@ -11,7 +11,7 @@ impl Water {
     }
 }
 
-trait Granular {
+trait Granular: Send + Sync {
     fn get_volume(&self);
 }
 
@@ -31,14 +31,8 @@ impl Granular for Gravel {
     }
 }
 
-trait Trait {
+trait Trait: Send + Sync {
     fn action(&self);
-}
-
-impl Trait for Concrete {
-    fn action(&self) {
-        println!("Action complete")
-    }
 }
 
 #[injectable(type = dyn Trait)]
@@ -49,24 +43,31 @@ struct Concrete {
     solids: Vec<dyn Granular>,
 }
 
+impl Trait for Concrete {
+    fn action(&self) {
+        println!("Action complete")
+    }
+}
+
+impl Concrete {
+    fn display(&self) {
+        self.liquid.slosh();        
+        self.solids.iter().for_each(|solid| {
+            solid.get_volume();
+        })
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let container: Container = ContainerBuilder::build()?;
     let dyn_trait_struct = container.get::<dyn Trait>();
     let concrete_struct = container.get::<Concrete>();
-    let dyn_solid_structs = container.get_all::<dyn Granular>();
 
-    println!("Dyn Struct");
+    println!("Dyn Struct Action");
     dyn_trait_struct.action();
-    println!("Concrete Struct");
+    println!("Concrete Struct Action");
     concrete_struct.action();
-    concrete_struct.liquid.slosh();
-    concrete_struct
-        .solids
-        .iter()
-        .for_each(|solid| solid.get_volume());
-    println!("Dyn Solid Structs");
-    dyn_solid_structs
-        .iter()
-        .for_each(|solid| solid.get_volume());
+    println!("Concrete Struct Display");
+    concrete_struct.display();
     Ok(())
 }

@@ -4,7 +4,7 @@ use crate::{container::Container, registration::RegisteredType, scope::Scope};
 
 pub trait Injectable<Interface>
 where
-    Interface: ?Sized + 'static,
+    Interface: Send + Sync + ?Sized + 'static,
 {
     fn __kroom_construct(container: &Container) -> Arc<Interface>;
 

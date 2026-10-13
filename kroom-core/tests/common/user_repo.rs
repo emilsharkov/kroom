@@ -2,7 +2,7 @@ use crate::common::user::User;
 use kroom_core::{container::Container, injectable::Injectable, registration::Registration};
 use std::sync::Arc;
 
-pub trait UserRepo {
+pub trait UserRepo: Send + Sync {
     fn find_one(&self, user_id: &str) -> User;
 }
 
