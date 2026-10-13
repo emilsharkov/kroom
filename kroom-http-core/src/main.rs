@@ -2,7 +2,7 @@ use std::{error::Error, sync::Arc};
 
 use axum::routing::method_routing::MethodRouter;
 use axum::Router;
-use kroom_core::{container::Container, container_builder::ContainerBuilder, injectable::Injectable};
+use kroom_core::{container::Container, container_builder::ContainerBuilder, injectable::Injectable, scope::Scope};
 
 /*
 
@@ -13,10 +13,6 @@ struct GreetingController {
 }
 
 -->
-
-trait Controller {
-    fn build_router(container: &Container) -> Router<Container>;
-}
 
 #[injectable(type = dyn Controller)]
 struct GreetingController {
@@ -45,6 +41,58 @@ pub trait Controller: Send + Sync {
             router = router.route(&path, method_router);
         }
         router
+    }
+}
+
+pub trait Greeter: Send + Sync {
+    fn greet(&self, name: &str) -> String;
+}
+
+#[kroom_macros::injectable(type = dyn Greeter)]
+pub struct WorldGreeter;
+
+impl Greeter for WorldGreeter {
+    fn greet(&self, name: &str) -> String {
+        format!("Hello, {}!", name)
+    }
+}
+
+#[kroom_macros::injectable(type = dyn Controller)]
+pub struct GreetingController {
+    #[inject]
+    greeter: dyn Greeter,
+}
+
+impl Controller for GreetingController {
+    fn __kroom_http_route_registration(&self) -> Vec<RouteRegistration> {
+        vec![
+            {
+                let greeter = Arc::clone(&self.greeter);
+                RouteRegistration {
+                    path: "/greet".to_string(),
+                    method_router: axum::routing::get(move || {
+                        let greeter = Arc::clone(&greeter);
+                        async move {
+                            greeter.greet("World")
+                        }
+                    }),
+                }
+            },
+            {
+                let greeter = Arc::clone(&self.greeter);
+                RouteRegistration {
+                    path: "/greet/{name}".to_string(),
+                    method_router: axum::routing::get(
+                        move |axum::extract::Path(name): axum::extract::Path<String>| {
+                            let greeter = Arc::clone(&greeter);
+                            async move {
+                                greeter.greet(&name)
+                            }
+                        },
+                    ),
+                }
+            },
+        ]
     }
 }
 

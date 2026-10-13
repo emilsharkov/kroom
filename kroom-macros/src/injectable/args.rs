@@ -13,7 +13,7 @@ impl MacroArgs {
     pub(crate) fn new() -> Self {
         MacroArgs { 
             target_type: None,
-            scope: syn::parse2(quote!{ Scope::Singleton }).expect("")
+            scope: syn::parse2(quote!{ ::kroom_core::scope::Scope::Singleton }).expect("")
         }
     }
 }
