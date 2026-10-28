@@ -1,6 +1,6 @@
 use std::{error::Error, sync::Arc};
 
-use axum::Router;
+use axum::{Router, extract::Path, response::IntoResponse, routing::get};
 use kroom_http_core::{application_builder::ApplicationBuilder, controller::Controller, route_registration::RouteRegistration};
 use kroom_macros::injectable;
 use tokio::net::TcpListener;
@@ -11,16 +11,15 @@ use tokio::net::TcpListener;
 struct GreetingController {
     #[inject]
     greeter: dyn Greeter
+}
 
+impl GreetingController {
     #[get("greet")]
     async fn greet(
-        Path(id): Path<u64>,
         Json(input): Json<CreateUser>,
-        Query(params): Query<HashMap<String, String>>
     ) -> impl IntoResponse {
         let name = input.name;
-        let greeting = self.greeter.greet(&name);
-        greeting
+        self.greeter.greet(&name)
     }
 }
 
@@ -30,6 +29,30 @@ struct GreetingController {
 struct GreetingController {
     #[inject]
     greeter: dyn Greeter
+}
+
+impl Controller for GreetingController {
+    fn __kroom_http_route_registration(&self) -> Vec<RouteRegistration> {
+        vec![
+            {
+                let greeter = Arc::clone(&self.greeter);
+                RouteRegistration {
+                    path: "/greet/{name}",
+                    method_router: axum::routing::get(
+                        move |
+                            axum::extract::Json(input): axum::extract::Json<CreateUser>
+                        | -> impl IntoResponse {
+                            let greeter = Arc::clone(&greeter);
+                            async move {
+                                let name = input.name;
+                                greeter.greet(&name)
+                            }
+                        },
+                    ),
+                }
+            },
+        ]
+    }
 }
 
 */
@@ -53,6 +76,15 @@ pub struct GreetingController {
     greeter: dyn Greeter,
 }
 
+impl GreetingController {
+    async fn greet(
+        &self,
+        Path(name): Path<String>
+    ) -> impl IntoResponse {
+        self.greeter.greet(&name)
+    }
+}
+
 impl Controller for GreetingController {
     fn __kroom_http_route_registration(&self) -> Vec<RouteRegistration> {
         vec![
@@ -72,16 +104,14 @@ impl Controller for GreetingController {
                 let greeter = Arc::clone(&self.greeter);
                 RouteRegistration {
                     path: "/greet/{name}",
-                    method_router: axum::routing::get(
-                        move |
-                            axum::extract::Path(name): axum::extract::Path<String>
-                        | {
-                            let greeter = Arc::clone(&greeter);
-                            async move {
-                                greeter.greet(&name)
-                            }
-                        },
-                    ),
+                    method_router: axum::routing::get(move |
+                        Path(name): Path<String>
+                    | {
+                        let greeter = Arc::clone(&greeter);
+                        async move {
+                            greeter.greet(&name)
+                        }
+                    }),
                 }
             },
         ]
